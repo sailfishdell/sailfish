@@ -11,10 +11,11 @@ import (
 
 	"github.com/superchalupa/sailfish/cmd/metric-engine/metric"
 	log "github.com/superchalupa/sailfish/src/log"
+	"github.com/superchalupa/sailfish/src/looplab/event"
 )
 
 // probably should be a configuration item
-const maximport = 200
+const maximport = 30
 
 type dataSource struct {
 	logger        log.Logger
@@ -30,6 +31,7 @@ type dataSource struct {
 	importFn      func() error
 	sendFn        func(*[]eh.EventData)
 	maxImport     int
+	syncEvent     bool
 }
 
 func (ds *dataSource) ProcessDBChange(database, table string) (err error) {
@@ -82,6 +84,8 @@ type dataSourceConfig struct {
 	ScanInterval int64
 	DBChange     map[string]map[string]struct{}
 	SourceName   string
+	MaxImport    int
+	SyncEvent    bool
 }
 
 //nolint:unparam // has to conform to the constructor API
@@ -101,8 +105,9 @@ func commonMakeNewSource(logger log.Logger, database *sqlx.DB, d busComponents, 
 		waitInterval:  time.Duration(settings.WaitInterval) * time.Second,
 		dbChange:      settings.DBChange,
 		sourceName:    settings.SourceName,
-		sendFn:        makeSendFunction(logger, d.GetBus()),
-		maxImport:     maximport,
+		sendFn:        makeSendFunction(logger, d.GetBus(), settings.MaxImport, settings.SyncEvent),
+		maxImport:     settings.MaxImport,
+		syncEvent:     settings.SyncEvent,
 		udbImportName: sect,
 	}
 
@@ -119,22 +124,29 @@ func commonMakeNewSource(logger log.Logger, database *sqlx.DB, d busComponents, 
 	return meta, nil
 }
 
-func makeSendFunction(logger log.Logger, bus eh.EventBus) func(*[]eh.EventData) {
+func makeSendFunction(logger log.Logger, bus eh.EventBus, maximport int, syncEvent bool) func(*[]eh.EventData) {
 	return func(events *[]eh.EventData) {
 		if len(*events) == 0 {
 			return
 		}
-		err := bus.PublishEvent(context.Background(), eh.NewEvent(metric.MetricValueEvent, *events, time.Now()))
+		evt := event.NewSyncEvent(metric.MetricValueEvent, *events, time.Now())
+		evt.Add(1)
+		err := bus.PublishEvent(context.Background(), evt)
 		if err != nil {
 			logger.Crit("Error publishing event to internal event bus. Should never happen!", "err", err)
 		}
-		*events = []eh.EventData{}
+		if syncEvent {
+			evt.Wait()
+		}
+		*events = make([]eh.EventData, 0, maximport/2)
 	}
 }
 func unmarshalSourceCfg(cfg *viper.Viper) (*dataSourceConfig, error) {
 	cfg.SetDefault("Type", "MetricColumns")
 	cfg.SetDefault("WaitInterval", "5")
 	cfg.SetDefault("ScanInterval", "0")
+	cfg.SetDefault("MaxImport", maximport)
+	cfg.SetDefault("SyncEvent", true)
 	settings := dataSourceConfig{}
 	err := cfg.Unmarshal(&settings)
 	if err != nil {

@@ -56,7 +56,7 @@ func (meta *importByColumn) doImport() (err error) {
 }
 
 func (meta *importByColumn) wrappedImportByColumn(totalEvents *int, totalRows *int) (err error) {
-	events := []eh.EventData{}
+	events := make([]eh.EventData, 0, meta.maxImport/2)
 
 	rows, err := meta.query.Queryx(meta)
 	if err != nil {
@@ -106,7 +106,7 @@ func (meta *importByColumn) wrappedImportByColumn(totalEvents *int, totalRows *i
 
 			*totalEvents++
 			events = append(events, &eventToSend)
-			if len(events) > maximport {
+			if len(events) > meta.maxImport {
 				meta.sendFn(&events)
 			}
 		}
