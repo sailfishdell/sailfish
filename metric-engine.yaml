@@ -503,17 +503,17 @@ UDB-Metric-Import:
          '/redfish/v1/FIXME/' || FQDD as Property,
         FQDD as FQDD,
 
-        ThermalAlertState as 'Metric-ThermalAlertState',
-        SecondaryGpuTemp as 'Metric-SecondaryGpuTemp',
-        PrimaryGpuTemp as 'Metric-PrimaryGpuTemp',
-        PowerSupplyStatus as 'Metric-PowerSupplyStatus',
-        PowerConsumption as 'Metric-PowerConsumption',
-        PowerBrakeState as 'Metric-PowerBrakeState',
-        MemoryTemp as 'Metric-MemoryTemp',
-        GPUStatus as 'Metric-GPUStatus',
-        GPUHealth as 'Metric-GPUHealth',
-        BoardTemp as 'Metric-BoardTemp',
-        BoardPowerSupplyStatus as 'Metric-BoardPowerSupplyStatus'
+        BoardPowerSupplyStatus as 'Metric-BoardPowerSupplyStatus',
+        BoardTemp              as 'Metric-BoardTemperature',
+        GPUHealth              as 'Metric-GPUHealth',
+        GPUStatus              as 'Metric-GPUStatus',
+        MemoryTemp             as 'Metric-MemoryTemperature',
+        PowerBrakeState        as 'Metric-PowerBrakeState',
+        PowerConsumption       as 'Metric-PowerConsumption',
+        PowerSupplyStatus      as 'Metric-PowerSupplyStatus',
+        PrimaryGpuTemp         as 'Metric-PrimaryTemperature',
+        SecondaryGpuTemp       as 'Metric-SecondaryTemperature',
+        ThermalAlertState      as 'Metric-ThermalAlertState'
       FROM TblGPUHealthObj
       WHERE Timestamp > :HWM
 
