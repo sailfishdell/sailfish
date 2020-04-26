@@ -98,7 +98,8 @@ func main() {
 	}()
 
 	cfgMgr.SetDefault("main.queuelen", 40)
-	cfgMgr.SetDefault("main.queuewarnpct", 0)
+	cfgMgr.SetDefault("main.queuewarnpct", 80)
+	cfgMgr.SetDefault("eemi.msgregpath", "/usr/local/lib/msgreg/MessageRegistry-en.xml.gz")
 	d := &busComponents{
 		EventBus:       eventbus.NewEventBus(),
 		EventPublisher: eventpublisher.NewEventPublisher(),
@@ -115,14 +116,16 @@ func main() {
 	go d.GetWaiter().Run()
 
 	shutdownFns := []func(){}
-	for _, fn := range optionalComponents {
-		shutdownFn := fn(logger, cfgMgr, d)
-		if shutdownFn == nil {
+	for _, startupFunction := range optionalComponents {
+		// The startupFunction returns a function to call for shutdown
+		// pass all our globally needed stuff to whoever needs it
+		shutdownFunction := startupFunction(logger, cfgMgr, d)
+		if shutdownFunction == nil {
 			continue
 		}
 
 		// run shutdown fns in reverse order of startup, so append accordingly
-		shutdownFns = append([]func(){shutdownFn}, shutdownFns...)
+		shutdownFns = append([]func(){shutdownFunction}, shutdownFns...)
 	}
 
 	// aggressively free memory after working startup events in the background
