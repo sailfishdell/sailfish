@@ -116,39 +116,63 @@ func Startup(logger log.Logger, cfg *viper.Viper, am3Svc am3.Service, d busCompo
 	}
 
 	bus := d.GetBus()
-	// handle sync of legacy AR attributes for MRD enable/disable, etc.
-	configSync, err := newConfigSync(logger, database, d)
+	err = setupLegacyARSync(logger, importMgr, database, am3Svc, d)
 	if err != nil {
-		return nil, xerrors.Errorf(addHandlerFail, err)
-	}
-	err = am3Svc.AddEventHandler(
-		"UDB Cfg change Notification",
-		udbChangeEvent,
-		MakeHandlerLegacyAttributeSync(log.With(logger, "module", "LegacyARSync"), importMgr, bus, configSync))
-	if err != nil {
-		return nil, xerrors.Errorf(addHandlerFail, err)
+		database.Close()
+		return nil, xerrors.Errorf("Error setting up legacy ar sync: %w", err)
 	}
 
-	configSync.kickstartLegacyARConfigSync(logger, d)
-
-	err = am3Svc.AddEventHandler("Import UDB Metric Values", telemetry.PublishClock, MakeHandlerUDBPeriodicImport(logger, importMgr, bus))
+	err = addRuntimeHandlers(logger, importMgr, am3Svc, bus)
 	if err != nil {
-		return nil, xerrors.Errorf(addHandlerFail, err)
-	}
-	err = am3Svc.AddEventHandler("UDB Change Notification", udbChangeEvent, MakeHandlerUDBChangeNotify(logger, importMgr, bus))
-	if err != nil {
-		return nil, xerrors.Errorf(addHandlerFail, err)
-	}
-
-	err = am3Svc.AddEventHandler("Update Metric Report Definition to Sync ConfigDB", telemetry.UpdateMRDResponseEvent, MakeHandlerUpdateMRDSyncConfigDB(logger, importMgr, bus))
-
-	if err != nil {
-		return nil, xerrors.Errorf(addHandlerFail, err)
+		database.Close()
+		return nil, err
 	}
 
 	go handleUDBNotifyPipe(logger, cfg.GetString("udb.udbnotifypipe"), d)
 
 	return func() { database.Close() }, nil
+}
+
+func setupLegacyARSync(logger log.Logger, importMgr *importManager, database *sqlx.DB, am3Svc am3.Service, d busComponents) error {
+	// handle sync of legacy AR attributes for MRD enable/disable, etc.
+	configSync, err := newConfigSync(logger, database, d)
+	if err != nil {
+		return err
+	}
+	err = am3Svc.AddEventHandler(
+		"UDB Cfg change Notification",
+		udbChangeEvent,
+		MakeHandlerLegacyAttributeSync(log.With(logger, "module", "LegacyARSync"), importMgr, d.GetBus(), configSync))
+	if err != nil {
+		return xerrors.Errorf(addHandlerFail, err)
+	}
+
+	configSync.kickstartLegacyARConfigSync(d)
+	return nil
+}
+
+func addRuntimeHandlers(logger log.Logger, importMgr *importManager, am3Svc am3.Service, bus eh.EventBus) error {
+	err := am3Svc.AddEventHandler(
+		"Import UDB Metric Values",
+		telemetry.PublishClock,
+		MakeHandlerUDBPeriodicImport(logger, importMgr, bus))
+	if err != nil {
+		return xerrors.Errorf(addHandlerFail, err)
+	}
+
+	err = am3Svc.AddEventHandler("UDB Change Notification", udbChangeEvent, MakeHandlerUDBChangeNotify(logger, importMgr, bus))
+	if err != nil {
+		return xerrors.Errorf(addHandlerFail, err)
+	}
+
+	err = am3Svc.AddEventHandler(
+		"Update Metric Report Definition to Sync ConfigDB",
+		telemetry.UpdateMRDResponseEvent,
+		MakeHandlerUpdateMRDSyncConfigDB(logger, importMgr, bus))
+	if err != nil {
+		return xerrors.Errorf(addHandlerFail, err)
+	}
+	return nil
 }
 
 type ConfigSync struct {
@@ -248,11 +272,12 @@ scan:
 }
 
 // cfgUtilSet is a helper to shell out to the cfgutil binary for setting AR
-func cfgUtilSet(logger log.Logger, reportName, key, value string) error {
+func cfgUtilSet(logger log.Logger, reportName, key, value string) {
 	cmd := exec.Command("/usr/bin/cfgutil", "command=setattr", "key="+cfgdbTelemetryKeyPrefix+reportName+".1#"+key, "value="+value)
 	output, err := cmd.Output()
-	logger.Debug("cfgutil command=setattr", "report", reportName, "key", key, "value", value, "output", string(output), "err", err, "module", "cfgutil")
-	return err
+	if err != nil {
+		logger.Debug("cfgutil command=setattr", "report", reportName, "key", key, "value", value, "output", string(output), "err", err, "module", "cfgutil")
+	}
 }
 
 func MakeHandlerUpdateMRDSyncConfigDB(logger log.Logger, importMgr *importManager, bus eh.EventBus) func(eh.Event) {
@@ -278,7 +303,7 @@ func MakeHandlerUpdateMRDSyncConfigDB(logger log.Logger, importMgr *importManage
 	}
 }
 
-func (cs ConfigSync) kickstartLegacyARConfigSync(logger log.Logger, d busComponents) {
+func (cs ConfigSync) kickstartLegacyARConfigSync(d busComponents) {
 	events := make([]eh.EventData, 0, maxPackedEvents)
 	for _, s := range []struct {
 		table  string
@@ -292,13 +317,13 @@ func (cs ConfigSync) kickstartLegacyARConfigSync(logger log.Logger, d busCompone
 			notify := &changeNotify{Database: "DMLiveObjectDatabase.db", Table: s.table, Rowid: rowid, Operation: 0}
 			events = append(events, notify)
 			if len(events) > maxPackedEvents {
-				publishHelper(logger, d.GetBus(), udbChangeEvent, events, true)
-				events = make([]eh.EventData, 0, maxPackedEvents)
+				event.PublishAndWait(context.Background(), d.GetBus(), udbChangeEvent, events)
+				events = events[:0] // re-use same memory
 			}
 		}
 	}
 	if len(events) > 0 {
-		publishHelper(logger, d.GetBus(), udbChangeEvent, events, true)
+		event.PublishAndWait(context.Background(), d.GetBus(), udbChangeEvent, events)
 	}
 }
 
@@ -337,10 +362,10 @@ func makeTriggerLinksPatch(trgList string) (json.RawMessage, error) {
 
 func MakeHandlerLegacyAttributeSync(logger log.Logger, importMgr *importManager, bus eh.EventBus, configSync *ConfigSync) func(eh.Event) {
 	cfgpopCount := 0
-	return func(event eh.Event) {
-		notify, ok := event.Data().(*changeNotify)
+	return func(evt eh.Event) {
+		notify, ok := evt.Data().(*changeNotify)
 		if !ok {
-			logger.Crit("UDB Change Notifier message handler got an invalid data event", "event", event, "eventdata", event.Data())
+			logger.Crit("UDB Change Notifier message handler got an invalid data event", "event", evt, "eventdata", evt.Data())
 			return
 		}
 
@@ -482,7 +507,7 @@ func MakeHandlerLegacyAttributeSync(logger log.Logger, importMgr *importManager,
 			return
 		}
 		logger.Debug("CRIT: about to send", "report", updateEvent.ReportDefinitionName, "PATCH", string(updateEvent.Patch))
-		publishHelper(logger, bus, telemetry.UpdateMRDCommandEvent, updateEvent, false)
+		event.Publish(context.Background(), bus, telemetry.UpdateMRDCommandEvent, updateEvent)
 	}
 }
 
@@ -521,18 +546,6 @@ type changeNotify struct {
 
 // This is the number of '|' separated fields in a correct record
 const numChangeFields = 4
-
-// ONLY WAIT IN FUNCTIONS THAT INGEST DATA FROM EXTERNAL SOURCES, HIGH RISK OF DEADLOCK IF YOU WAIT() FROM AN AM3 Handler Function
-func publishHelper(logger log.Logger, bus eh.EventBus, et eh.EventType, data eh.EventData, wait bool) {
-	evt := event.PrepSyncEvent(et, data, time.Now())
-	err := bus.PublishEvent(context.Background(), evt)
-	if err != nil {
-		logger.Crit("Error publishing event. This should never happen!", "err", err)
-	}
-	if wait {
-		evt.Wait()
-	}
-}
 
 func splitUDBNotify(data []byte, atEOF bool) (advance int, token []byte, err error) {
 	if atEOF {

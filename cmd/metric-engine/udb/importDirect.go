@@ -31,7 +31,7 @@ func newDirectMetric(logger log.Logger, db *sqlx.DB, d busComponents, cfg *viper
 
 func (meta *importDirect) doImport() (err error) {
 	err = nil
-	events := make([]eh.EventData, 0, meta.maxImport/2)
+	events := make([]eh.EventData, 0, meta.maxImport/initialImportDivisor)
 	totalRows := 0
 	totalEvents := 0
 	defer func() {

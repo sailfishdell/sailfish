@@ -129,18 +129,18 @@ func makeSendFunction(logger log.Logger, bus eh.EventBus, maximport int, syncEve
 		if len(*events) == 0 {
 			return
 		}
-		evt := event.NewSyncEvent(metric.MetricValueEvent, *events, time.Now())
-		evt.Add(1)
-		err := bus.PublishEvent(context.Background(), evt)
-		if err != nil {
-			logger.Crit("Error publishing event to internal event bus. Should never happen!", "err", err)
-		}
+		makeEvtFn := event.NewEvent
 		if syncEvent {
-			evt.Wait()
+			makeEvtFn = func(et eh.EventType, ed eh.EventData, t time.Time) eh.Event { return event.PrepSyncEvent(et, ed, t) }
 		}
-		*events = make([]eh.EventData, 0, maximport/2)
+
+		// only waits if event is sync
+		event.PublishEventAndWait(context.Background(), bus, makeEvtFn(metric.MetricValueEvent, *events, time.Now()))
+		*events = make([]eh.EventData, 0, maximport/initialImportDivisor)
 	}
 }
+
+const initialImportDivisor = 2 // how much memory to allocate initially
 
 func unmarshalSourceCfg(cfg *viper.Viper) (*dataSourceConfig, error) {
 	cfg.SetDefault("Type", "MetricColumns")
