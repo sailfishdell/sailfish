@@ -1667,6 +1667,8 @@ createdb:
           ' "ReportActions": ' || json(Actions) || ',' ||
           ' "ReportActions@odata.count": ' || json_array_length(json(Actions)) || ',' ||
           ' "ReportActions@Redfish.AllowableValues": ' || json_array('LogToMetricReportsCollection', 'RedfishEvent') || ',' ||
+          -- unsupported right now, so hardcoded:
+          ' "Wildcards": [], "Wildcards@odata.count": 0, ' ||
           case Type
           when 'Periodic' then
           ' "Schedule": ' || json_object(
@@ -1690,7 +1692,7 @@ createdb:
             (
               select
                 json_object(
-                  'MetricID',
+                  'MetricId',
                     CASE MM.NamePattern
                     WHEN '' THEN NULL
                     ELSE MM.NamePattern
