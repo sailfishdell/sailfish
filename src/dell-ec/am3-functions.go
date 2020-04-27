@@ -1343,6 +1343,13 @@ func in_array(a string, list []string) bool {
 	return false
 }
 
+// Take a string to bool map and set all the values to be the given bool
+func set_all_in_map_bool(in_map map[string]bool, value bool) {
+	for key, _ := range in_map {
+		in_map[key] = value
+	}
+}
+
 func in_array_index(a string, list []string) int {
 	for i, b := range list {
 		if b == a {
@@ -1403,3 +1410,23 @@ func value_to_string(value interface{}) (interface{}, bool) {
 		return nil, false
 	}
 }
+
+// Split a string and return the specified index, if it exists. (-1 for last)
+func split_string_index(s string, d string, i int) string {
+	split := strings.Split(s, d)
+
+	// Verification on requested index
+	if i < 0 && -i <= len(split) {
+		// Negative value for i (in bounds of course) is assumed to mean to
+		// traverse backwards similar to python
+		i = len(split) + i
+	} else if i >= len(split) || -i >= len(split) {
+		// Index out of bounds will assume to mean that the last element
+		// is requested. :)
+		i = len(split) - 1
+	}
+
+	return split[i]
+}
+
+/*********************************** EOF ***********************************/

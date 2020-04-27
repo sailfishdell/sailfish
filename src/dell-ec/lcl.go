@@ -165,6 +165,8 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, am3Svc *a
 
 	go func() {
 		swinvList := map[string][]*model.Model{}
+		uris_in_use := map[string]bool{}
+
 		for {
 
 			// Wait for this thread to be kicked
@@ -184,6 +186,11 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, am3Svc *a
 
 			fqdd_mappings := map[string][]string{}
 			uri_mappings := map[string][]string{}
+
+			// reset all URIs to be "not in use". If they are still in use, then
+			// they will be marked "true" while each model is being scanned. Any
+			// URIs which are still marked as "false" at the end will be deleted.
+			set_all_in_map_bool(uris_in_use, false)
 
 			// scan through each model and build our new inventory uris
 			// need to iterate through models.  With the same work flow below.. When iteration is complete... need to add uris and fqdds to model.
@@ -271,7 +278,7 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, am3Svc *a
 					}
 
 					if _, ok := firmwareInventoryViews[compVerTuple]; !ok {
-						_, vw, _ := instantiateSvc.Instantiate("firmware_instance", map[string]interface{}{
+						_, vw, err := instantiateSvc.Instantiate("firmware_instance", map[string]interface{}{
 							"compVerTuple": compVerTuple,
 							"name":         name,
 							"version":      version,
@@ -279,11 +286,26 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, am3Svc *a
 							"installDate":  installDate,
 							"id":           class,
 						})
+
+						// In the rare event that instantiate does not work, make sure not to add
+						// the compVerTuple to the overall firmwareInventoryViews so that instantiate
+						// can be retried.
+						if err != nil {
+							logger.Crit(compVerTuple + " swinv failed to instantiate: " + err.Error())
+							continue
+						}
+
 						//fmt.Printf("add to list ---------> INSTANTIATED: %s\n", vw.GetURI())
 						firmwareInventoryViews[compVerTuple] = vw
 
+						// Mark URI as "in use" so that it is not deleted during clean up
+						uris_in_use[vw.GetURI()] = true
+
 					} else {
 						vw := firmwareInventoryViews[compVerTuple]
+
+						// Mark URI as "in use" so that it is not deleted during clean up
+						uris_in_use[vw.GetURI()] = true
 
 						firmMdl := vw.GetModel("default")
 
@@ -341,6 +363,22 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, am3Svc *a
 				vw := firmwareInventoryViews[compVerTuple]
 				firmMdl := vw.GetModel("default")
 				firmMdl.UpdateProperty("related_list", arr)
+			}
+
+			// Clean up any URIs which are no longer in use
+			for uri, is_used := range uris_in_use {
+				if !is_used {
+					logger.Crit(uri + " swinv is no longer in use, removing")
+
+					// Since the URI is no longer in use, delete it.
+					if id, ok := d.GetAggregateIDOK(uri); ok {
+						d.CommandHandler.HandleCommand(context.Background(), &domain.RemoveRedfishResource{ID: id})
+						delete(uris_in_use, uri)
+						delete(firmwareInventoryViews, split_string_index(uri, "/", -1))
+					} else {
+						logger.Crit(uri + " swinv can't be deleted, could not find ID")
+					}
+				}
 			}
 		}
 	}()
