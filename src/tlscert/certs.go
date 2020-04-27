@@ -55,9 +55,6 @@ func NewCert(options ...Option) (*MyCert, error) {
 }
 
 func (c *MyCert) logger() log.Logger {
-	if c._logger == nil {
-		c._logger = log.MustLogger("tlscert")
-	}
 	return c._logger
 }
 
@@ -328,7 +325,6 @@ func (c *MyCert) Serialize() error {
 	pub := publicKey(c.priv)
 	certB, err := x509.CreateCertificate(rand.Reader, c.cert, c.certCA, pub, c.certCApriv)
 	if err != nil {
-		c.logger().Error("create certificate failed", "err", err)
 		return errors.New("certificate creation failed")
 	}
 

@@ -27,7 +27,7 @@ type syncEvent interface {
 
 // PublishRedfishEvents starts a background goroutine to collage internal
 // redfish events for external consumption
-func PublishRedfishEvents(ctx context.Context, m propertygetter, eb eh.EventBus) error {
+func PublishRedfishEvents(ctx context.Context, logger log.Logger, m propertygetter, eb eh.EventBus) error {
 
 	EventPublisher := eventpublisher.NewEventPublisher()
 	eb.AddHandler(eh.MatchAnyEventOf(RedfishEvent, domain.RedfishResourceCreated, domain.RedfishResourceRemoved), EventPublisher)
@@ -59,7 +59,7 @@ func PublishRedfishEvents(ctx context.Context, m propertygetter, eb eh.EventBus)
 				if e, ok := event.(syncEvent); ok {
 					e.Done()
 				}
-				log.MustLogger("event_service").Info("Got event", "event", event)
+				logger.Info("Got event", "event", event)
 				// is RedfishResourceUpdated handled under RedfishEventData?
 				switch data := event.Data().(type) {
 				case *MetricReportData:
@@ -72,7 +72,7 @@ func PublishRedfishEvents(ctx context.Context, m propertygetter, eb eh.EventBus)
 						if data.EventType == "ResourceUpdated" &&
 							evt.EventType == data.EventType &&
 							evt.OriginOfCondition == data.OriginOfCondition {
-							log.MustLogger("event_service").Debug("duplicate")
+							logger.Debug("duplicate")
 							found = true
 							break
 						}
@@ -105,7 +105,7 @@ func PublishRedfishEvents(ctx context.Context, m propertygetter, eb eh.EventBus)
 					}
 
 					if len(eventQ) > maxE {
-						log.MustLogger("event_service").Info("Full queue: sending now.", "id", id)
+						logger.Info("Full queue: sending now.", "id", id)
 						// if queue has max number of events, send them now
 						sendEvents(ctx, id, eventQ, eb)
 						if !timer.Stop() {
@@ -141,11 +141,11 @@ func PublishRedfishEvents(ctx context.Context, m propertygetter, eb eh.EventBus)
 					eb.PublishEvent(ctx, eh.NewEvent(RedfishEvent, eventData, time.Now()))
 
 				default:
-					log.MustLogger("event_service").Warn("Should never happen: got an invalid event in the event handler", "data", data, "deets", fmt.Sprintf("%T", data))
+					logger.Warn("Should never happen: got an invalid event in the event handler", "data", data, "deets", fmt.Sprintf("%T", data))
 				}
 
 			case <-timer.C:
-				log.MustLogger("event_service").Info("times up: sending now.", "id", id)
+				logger.Info("times up: sending now.", "id", id)
 				sendEvents(ctx, id, eventQ, eb)
 				eventQ = []*RedfishEventData{}
 				id = id + 1

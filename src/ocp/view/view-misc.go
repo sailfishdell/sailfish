@@ -5,7 +5,6 @@ import (
 	"errors"
 	"golang.org/x/xerrors"
 
-	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/ocp/model"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
@@ -36,8 +35,7 @@ func (s *View) PropertyGet(
 	// already have lock, used *Unlocked api
 	modelObj := s.GetModelUnlocked(modelName)
 	if modelObj == nil {
-		log.MustLogger("GET").Debug("metadata specifies a nonexistent model name", "meta", meta, "view", s)
-		return errors.New("metadata specifies a nonexistent model name")
+		return errors.New("metadata specifies a nonexistent model name: " + modelName)
 	}
 
 	formatterRaw, ok := meta["formatter"]
@@ -88,24 +86,19 @@ func (s *View) PropertyPatch(
 	s.Lock()
 	defer s.Unlock()
 
-	log.MustLogger("PATCH").Debug("PATCH START", "body", encopts.Parse, "meta", meta, "rrp", rrp)
-
 	controllerName, ok := meta["controller"].(string)
 	if !ok {
-		log.MustLogger("PATCH").Debug("metadata is missing the controller name", "meta", meta)
 		return xerrors.Errorf("metadata is missing the controller name: %v\n", meta)
 	}
 
 	controller, ok := s.controllers[controllerName]
 	if !ok {
-		log.MustLogger("PATCH").Debug("metadata specifies a nonexistent controller name", "meta", meta)
 		return xerrors.Errorf("metadata specifies a nonexistent controller name: %v\n", meta)
 	}
 
 	property, ok := meta["property"].(string)
 	if ok {
 		newval, err := controller.UpdateRequest(ctx, property, encopts.Parse, auth)
-		log.MustLogger("PATCH").Debug("update request", "newval", newval, "err", err)
 		if e, ok := err.(domain.HTTP_code); ok {
 			domain.AddEEMIMessage(encopts.HttpResponse, agg, "PATCHERROR", &e)
 
@@ -113,7 +106,6 @@ func (s *View) PropertyPatch(
 			rrp.Value = newval
 			domain.AddEEMIMessage(encopts.HttpResponse, agg, "SUCCESS", nil)
 		} else {
-			log.MustLogger("PATCH").Debug("controller.UdpateRequest err is an unknown type", err)
 			return xerrors.Errorf("controller.UdpateRequest err is an unknown type %t", err)
 		}
 		return nil

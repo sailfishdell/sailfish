@@ -48,6 +48,7 @@ type POST struct {
 	commandHandler eh.CommandHandler
 	eventWaiter    *eventwaiter.EventWaiter
 	svcWrapper     func(map[string]interface{}) *view.View
+	logger         log.Logger
 
 	ID      eh.UUID           `json:"id"`
 	CmdID   eh.UUID           `json:"cmdid"`
@@ -142,7 +143,6 @@ func (c *POST) startSessionDeleteTimer(sessionVw *view.View, timeout int) {
 	ctx := context.Background()
 	sessionUUID := sessionVw.GetUUID()
 	sessionURI := sessionVw.GetURI()
-	logger := log.MustLogger("session")
 
 	newCtx, cancel := context.WithCancel(ctx)
 	duration := time.Duration(timeout) * time.Second
@@ -153,7 +153,7 @@ func (c *POST) startSessionDeleteTimer(sessionVw *view.View, timeout int) {
 		c.commandHandler.HandleCommand(context.Background(), &domain.RemoveRedfishResource{ID: sessionUUID, ResourceURI: sessionURI})
 	})
 
-	listener := eventwaiter.NewListener(newCtx, logger, c.eventWaiter, func(event eh.Event) bool {
+	listener := eventwaiter.NewListener(newCtx, c.logger, c.eventWaiter, func(event eh.Event) bool {
 		switch event.EventType() {
 		case XAuthTokenRefreshEvent:
 			if data, ok := event.Data().(*XAuthTokenRefreshData); ok {

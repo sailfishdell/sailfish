@@ -54,6 +54,7 @@ type EventService struct {
 	wrap      func(string, map[string]interface{}) (log.Logger, *view.View, error)
 	addparam  func(map[string]interface{}) map[string]interface{}
 	actionSvc actionService
+	logger    log.Logger
 }
 
 var GlobalEventService *EventService
@@ -84,6 +85,7 @@ func New(ctx context.Context, cfg *viper.Viper, cfgMu *sync.RWMutex, d *domain.D
 // StartEventService will create a model, view, and controller for the eventservice, then start a goroutine to publish events
 //      If you want to save settings, hook up a mapper to the "default" view returned
 func (es *EventService) StartEventService(ctx context.Context, logger log.Logger, instantiateSvc *testaggregate.Service, params map[string]interface{}) *view.View {
+	es.logger = logger
 	es.addparam = func(input map[string]interface{}) (output map[string]interface{}) {
 		output = map[string]interface{}{}
 		for k, v := range params {
@@ -108,7 +110,7 @@ func (es *EventService) StartEventService(ctx context.Context, logger log.Logger
 	eh.RegisterCommand(func() eh.Command {
 		return &POST{es: es, d: es.d}
 	})
-	PublishRedfishEvents(ctx, esView.GetModel("default"), es.d.EventBus)
+	PublishRedfishEvents(ctx, log.With(logger, "module", "event_service"), esView.GetModel("default"), es.d.EventBus)
 
 	return esView
 }
@@ -310,14 +312,14 @@ func (es *EventService) postExternalEvent(subCtx SubscriptionCtx, event eh.Event
 				time.Sleep(time.Duration(i) * 2 * time.Second)
 				req, err := http.NewRequest("POST", subCtx.Destination, bytes.NewBuffer(eachEvent.data))
 				if err != nil {
-					log.MustLogger("event_service").Crit("ERROR CREATING REQUEST", "destination", subCtx.Destination, "Buffer bytes", eachEvent.data)
+					es.logger.Crit("ERROR CREATING REQUEST", "destination", subCtx.Destination, "Buffer bytes", eachEvent.data)
 					break
 				}
 				req.Header.Add("OData-Version", "4.0")
 				req.Header.Set("Content-Type", "application/json")
 				resp, err := client.Do(req)
 				if err != nil {
-					log.MustLogger("event_service").Crit("ERROR POSTING", "Id", eachEvent.id, "err", err)
+					es.logger.Crit("ERROR POSTING", "Id", eachEvent.id, "err", err)
 					logToEventFile(fmt.Sprintf("%s -- ERROR POSTING Id=%s to uri=%s attempt=%d err=%s\n", time.Now().UTC().Format(time.UnixDate), eachEvent.id, subCtx.Destination, i+1, err))
 				} else if resp.StatusCode == http.StatusOK ||
 					resp.StatusCode == http.StatusCreated ||
@@ -328,7 +330,7 @@ func (es *EventService) postExternalEvent(subCtx SubscriptionCtx, event eh.Event
 					logSent = true
 				} else {
 					//Error code return
-					log.MustLogger("event_service").Crit("ERROR POSTING", "Id", eachEvent.id, "StatusCode", resp.StatusCode, "uri", subCtx.Destination)
+					es.logger.Crit("ERROR POSTING", "Id", eachEvent.id, "StatusCode", resp.StatusCode, "uri", subCtx.Destination)
 					logToEventFile(fmt.Sprintf("%s -- ERROR POSTING Id=%s to uri=%s attempt=%d HTTP Status=%d\n", time.Now().UTC().Format(time.UnixDate), eachEvent.id, subCtx.Destination, i+1, resp.StatusCode))
 				}
 				if resp != nil {
@@ -337,18 +339,17 @@ func (es *EventService) postExternalEvent(subCtx SubscriptionCtx, event eh.Event
 			}
 			if !logSent {
 				logToEventFile(fmt.Sprintf("%s -- FAILURE to send Id=%s to uri=%s\n", time.Now().UTC().Format(time.UnixDate), eachEvent.id, subCtx.Destination))
-				log.MustLogger("event_service").Crit("ERROR POSTING, DROPPED", "Id", eachEvent.id, "uri", subCtx.Destination)
+				es.logger.Crit("ERROR POSTING, DROPPED", "Id", eachEvent.id, "uri", subCtx.Destination)
 			}
 		}
 	}:
 	default: // drop the POST if the queue is full
-		log.MustLogger("event_service").Crit("External Event Queue Full, dropping")
+		es.logger.Crit("External Event Queue Full, dropping")
 		logToEventFile(fmt.Sprintf("%s -- DROP Messages to uri=%s\n", time.Now().UTC().Format(time.UnixDate), subCtx.Destination))
 	}
 }
 
 func makeExternalRedfishEvent(subCtx SubscriptionCtx, events []*RedfishEventData, uuid eh.UUID) []eventBinary {
-	log.MustLogger("event_service").Info("POST!", "dest", subCtx.Destination, "redfish event data", events)
 	eventlist := []eventBinary{}
 
 	if len(subCtx.EventTypes) == 0 {
@@ -453,7 +454,5 @@ func logToEventFile(msg string) {
 	if logfile != nil {
 		logfile.WriteString(msg)
 		logfile.Close()
-	} else {
-		log.MustLogger("event_service").Crit(msg)
 	}
 }

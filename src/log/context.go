@@ -13,6 +13,18 @@ const (
 	sessionIDKey
 )
 
+// GlobalLogger is for the application main() to set up as a base
+// TODO: this should be unexported and a helper function set up to set this
+var GlobalLogger Logger
+
+// MustLogger will return a logger or will panic
+func mustLogger(module string) Logger {
+	if GlobalLogger == nil {
+		panic("Global Logger is not set up, cannot return logger.")
+	}
+	return With(GlobalLogger, "module", module)
+}
+
 // WithRequestID returns a context with embedded request ID
 func WithRequestID(ctx context.Context, requestID eh.UUID) context.Context {
 	return context.WithValue(ctx, requestIDKey, requestID)
@@ -25,7 +37,7 @@ func WithSessionID(ctx context.Context, sessionID eh.UUID) context.Context {
 
 // ContextLogger returns a logger and adds as much info as possible obtained from the context
 func ContextLogger(ctx context.Context, module string, opts ...interface{}) Logger {
-	newLogger := MustLogger(module)
+	newLogger := mustLogger(module)
 	if ctx != nil {
 		ctxRqID := ctx.Value(requestIDKey)
 		if ctxRqID != nil {
