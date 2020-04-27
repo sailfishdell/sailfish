@@ -23,6 +23,10 @@ import (
 	"github.com/superchalupa/sailfish/src/log15adapter"
 )
 
+const (
+	forceGCInterval = 30 * time.Second
+)
+
 type busComponents struct {
 	EventBus       eh.EventBus
 	EventWaiter    *eventwaiter.EventWaiter
@@ -125,12 +129,20 @@ func main() {
 		shutdownFns = append([]func(){shutdownFn}, shutdownFns...)
 	}
 
+	blockUntilExit(ctx) // blocks until the context is cancelled
+
+	for _, fn := range shutdownFns {
+		fn()
+	}
+}
+
+func blockUntilExit(ctx context.Context) {
 	// aggressively free memory after working startup events in the background
 	time.Sleep(time.Second)
 	debug.FreeOSMemory()
 	time.Sleep(time.Second)
 	debug.FreeOSMemory()
-	t := time.Tick(time.Second * 30)
+	t := time.Tick(forceGCInterval)
 untilExit:
 	for {
 		select {
@@ -139,9 +151,5 @@ untilExit:
 		case <-t:
 			debug.FreeOSMemory()
 		}
-	}
-
-	for _, fn := range shutdownFns {
-		fn()
 	}
 }
