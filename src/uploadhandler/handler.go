@@ -2,6 +2,7 @@ package uploadhandler
 
 import (
 	"context"
+	"crypto/sha256"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -58,6 +59,18 @@ func debugError(r *http.Request) {
 	}
 }
 
+func logFileSha(localFile string) {
+	f, err := os.Open(localFile)
+	if err == nil {
+		h := sha256.New()
+		if _, err := io.Copy(h, f); err != nil {
+			fmt.Printf("\ncopy failed, %s\n", err)
+		}
+		fmt.Printf("\nupload SHA256 %x\n", h.Sum(nil))
+	}
+	f.Close()
+}
+
 func octetStreamUploadHandler(c *POST, r *http.Request) error {
 	var localFile string
 	var uploadFile string
@@ -86,6 +99,7 @@ func octetStreamUploadHandler(c *POST, r *http.Request) error {
 
 	fmt.Printf("%d bytes are recieved.\n", n)
 	fmt.Printf("\nupload %d %s to %s\n", n, uploadFile, localFile)
+	logFileSha(localFile)
 
 	return nil
 }
@@ -162,7 +176,9 @@ func (c *POST) ParseHTTPRequest(r *http.Request) error {
 			fmt.Printf("\ncopy failed, %s\n", err)
 			return err
 		}
+
 	}
+	logFileSha(localFile)
 
 	return nil
 }
