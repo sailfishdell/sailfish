@@ -5,6 +5,7 @@ import (
 
 	eh "github.com/looplab/eventhorizon"
 	"github.com/superchalupa/sailfish/src/log"
+	"github.com/superchalupa/sailfish/src/looplab/event"
 )
 
 // EventListener receives events from an EventWaiter.
@@ -26,15 +27,12 @@ func NewListener(ctx context.Context, log log.Logger, ew EW, match func(eh.Event
 // STRONGLY PREFER TO USE .ProcessEvents() instead of this
 func (l *EventListener) Wait(ctx context.Context) (eh.Event, error) {
 	select {
-	case event := <-l.listenerInbox:
+	case evt := <-l.listenerInbox:
 		// TODO: separation of concerns: this should be factored out into a middleware of some sort...
 		// now that we are waiting on the listeners, we can .Done() the waitgroup for the eventwaiter itself
-		if e, ok := event.(syncEvent); ok {
-			e.Done()
-			//defer fmt.Printf("Done in Wait()\n")
-		}
+		event.ReleaseSyncEvent(evt)
 
-		return event, nil
+		return evt, nil
 	case <-ctx.Done():
 		return nil, ctx.Err()
 	}
@@ -44,8 +42,8 @@ func (l *EventListener) Wait(ctx context.Context) (eh.Event, error) {
 // STRONGLY PREFER TO USE .ProcessEvents() instead of this
 func (l *EventListener) UnSyncWait(ctx context.Context) (eh.Event, error) {
 	select {
-	case event := <-l.listenerInbox:
-		return event, nil
+	case evt := <-l.listenerInbox:
+		return evt, nil
 	case <-ctx.Done():
 		return nil, ctx.Err()
 	}

@@ -23,12 +23,13 @@ import (
 
 	eh "github.com/looplab/eventhorizon"
 	"github.com/superchalupa/sailfish/src/log"
+	"github.com/superchalupa/sailfish/src/looplab/event"
 )
 
 // TODO: accept override or read from config?
 const (
-	defaultWaiterQueueLen             = 200
-	queueDefaultLoggingStartThreshold = 25
+	defaultWaiterQueueLen            = 200
+	defaultWaiterQueuePctFullWarning = 20
 )
 
 type Listener interface {
@@ -46,6 +47,7 @@ type EventWaiter struct {
 	unregister chan Listener
 	autorun    bool
 	logger     log.Logger
+	warnPct    int
 }
 
 type Option func(e *EventWaiter) error
@@ -54,15 +56,25 @@ type Option func(e *EventWaiter) error
 func NewEventWaiter(o ...Option) *EventWaiter {
 	w := EventWaiter{
 		done:       make(chan struct{}),
-		inbox:      make(chan eh.Event, defaultWaiterQueueLen),
 		register:   make(chan Listener),
 		unregister: make(chan Listener),
 		autorun:    true,
+		warnPct:    defaultWaiterQueuePctFullWarning,
 	}
 
 	err := w.ApplyOption(o...)
-	if err != nil && w.logger != nil {
+	if w.logger == nil {
+		// will remove the next line in the next patch set after callers are all updated.
+		w.logger = log.ContextLogger(context.Background(), "eventwaiter") // super poor, remove when we update everybody.
+		w.logger.Crit("FIXME: eventwaiter instantiated without a logger. logger is required. use WithLogger()")
+	}
+	w.logger = log.With(w.logger, "module", "eventwaiter", "module", "EW-"+w.name)
+	if err != nil {
 		w.logger.Info("failed to apply option", "err", err)
+	}
+
+	if w.inbox == nil {
+		w.inbox = make(chan eh.Event, defaultWaiterQueueLen)
 	}
 
 	if w.autorun {
@@ -87,6 +99,20 @@ func SetName(name string) Option {
 	}
 }
 
+func QueueLen(l int) Option {
+	return func(w *EventWaiter) error {
+		w.inbox = make(chan eh.Event, l)
+		return nil
+	}
+}
+
+func WarnPct(l int) Option {
+	return func(w *EventWaiter) error {
+		w.warnPct = l
+		return nil
+	}
+}
+
 func WithLogger(l log.Logger) Option {
 	return func(w *EventWaiter) error {
 		w.logger = l
@@ -106,7 +132,6 @@ func (w *EventWaiter) ApplyOption(options ...Option) error {
 
 func (w *EventWaiter) Run() {
 	listeners := map[eh.UUID]Listener{}
-	startPrinting := false
 	for {
 		select {
 		case <-w.done:
@@ -119,44 +144,45 @@ func (w *EventWaiter) Run() {
 				delete(listeners, l.GetID())
 				l.CloseInbox()
 			}
-		case event := <-w.inbox:
-			if len(w.inbox) > queueDefaultLoggingStartThreshold {
-				startPrinting = true
-			}
-			if startPrinting && w.logger != nil {
-				w.logger.Debug("Event Waiter congestion", "len", len(w.inbox), "cap", cap(w.inbox), "name", w.name)
-			}
-			if len(w.inbox) == 0 {
-				startPrinting = false
-			}
+		case evt := <-w.inbox:
 			for _, l := range listeners {
-				l.ConsumeEventFromWaiter(event)
+				l.ConsumeEventFromWaiter(evt)
 			}
 
 			// TODO: separation of concerns: this should be factored out into a middleware of some sort...
-			// now that we are waiting on the listeners, we can .Done() the waitgroup for the eventwaiter itself
-			if e, ok := event.(syncEvent); ok {
-				//fmt.Printf("Done in listener\n")
-				e.Done()
-			}
+			// TODO: invent middleware
+			event.ReleaseSyncEvent(evt)
 		}
 	}
 }
 
-type syncEvent interface {
-	Add(int)
-	Done()
-}
-
 // Notify implements the eventhorizon.EventObserver.Notify method which forwards
 // events to the waiters so that they can match the events.
-func (w *EventWaiter) Notify(ctx context.Context, event eh.Event) {
+func (w *EventWaiter) Notify(ctx context.Context, evt eh.Event) {
 	// TODO: separation of concerns: this should be factored out into a middleware of some sort...
-	if e, ok := event.(syncEvent); ok {
-		e.Add(1)
-	}
+	// TODO: invent middleware
+	event.PinSyncEvent(evt)
 
-	w.inbox <- event
+	/* FASTPATH DEBUGGING commented out. remove comments to get stats here or debug
+	fn := func(string, ...interface{}) {}
+	qlen = len(w.inbox)
+	qcap = cap(w.inbox)
+	if w.logger != nil && qlen == qcap {
+		fn = w.logger.Crit
+	} else if w.logger != nil && 100*qlen/qcap > w.warnPct {
+		fn = w.logger.Debug
+	}
+	fn("eventwaiter queue",
+		"len", qlen,
+		"cap", qcap,
+		"name", w.name,
+		"warnPctThreshold", w.warnPct,
+		"currentPctFull", 100*qlen/qcap,
+		"eventtype", evt.EventType(),
+	)
+	*/
+
+	w.inbox <- evt
 }
 
 // Listen creates a new listener that will consume events from the waiter and call back for interesting ones
