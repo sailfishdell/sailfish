@@ -854,19 +854,28 @@ func (factory *telemetryManager) GenerateMetricReport(tx *sqlx.Tx, mrdName strin
 			}
 		}
 
-		// TODO:
-		// Query the MetricValueByReport to see if there are any rows for this report. If there are no rows in
-		// this report, error out to cancel transaction and pretend nothing happened
-		if MRD.Type != metric.OnRequest {
-			count := int64(0)
-			err = factory.getNamedSQLXTx(tx, "count_report_records").Get(&count, sqlargs)
-			if err != nil {
-				return xerrors.Errorf("error executing query count_report_records: %w", err)
+		/*
+			This is the code that handles avoidance of reports that have no
+			MetricValues. Commenting out this for now based on team discussion. We
+			could potentially refine this and use this in this release to handle some
+			corner cases. If it's not used by Halo+B release, should be removed.
+
+			POTENTIAL USES: we can AVOID sending out triggers if metric is zero len.
+				- probably: set mrname to "". Update callers to detect zero len mrname and avoid sending events
+
+			// Query the MetricValueByReport to see if there are any rows for this report. If there are no rows in
+			// this report, error out to cancel transaction and pretend nothing happened
+			if MRD.Type != metric.OnRequest {
+				count := int64(0)
+				err = factory.getNamedSQLXTx(tx, "count_report_records").Get(&count, sqlargs)
+				if err != nil {
+					return xerrors.Errorf("error executing query count_report_records: %w", err)
+				}
+				if count == 0 {
+					return xerrors.Errorf("Report %s has no records, aborting generation.", MRD.Name)
+				}
 			}
-			if count == 0 {
-				return xerrors.Errorf("Report %s has no records, aborting generation.", MRD.Name)
-			}
-		}
+		*/
 
 		// do this after we are sure metric report is generated
 		factory.LastMRTS[MRD.Name] = factory.MetricTSHWM
