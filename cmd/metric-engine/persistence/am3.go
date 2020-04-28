@@ -49,6 +49,7 @@ type persistMeta struct {
 	actionType int // save (0), delete(1)
 	fileLoc    string
 	bkupLoc    string
+	recovType  eh.EventType
 }
 
 func Handler(ctx context.Context, logger log.Logger, cfg *viper.Viper, am3Svc eventHandler, d busIntf) {
@@ -61,13 +62,14 @@ func Handler(ctx context.Context, logger log.Logger, cfg *viper.Viper, am3Svc ev
 		eventType  eh.EventType
 		saveDir    string
 		bkupDir    string
+		recovType  eh.EventType
 		jsonAction int
 	}{
-		{"Add MRD", tele.AddMRDResponseEvent, pmrdDir, "", SAVE},
-		{"Update MRD", tele.UpdateMRDResponseEvent, pmrdDir, "", SAVE},
-		{"Delete MRD", tele.DeleteMRDResponseEvent, pmrdDir, pROmrdDir, DELETE},
+		{"Add MRD", tele.AddMRDResponseEvent, pmrdDir, "", "", SAVE},
+		{"Update MRD", tele.UpdateMRDResponseEvent, pmrdDir, "", "", SAVE},
+		{"Delete MRD", tele.DeleteMRDResponseEvent, pmrdDir, pROmrdDir, tele.AddMRDCommandEvent, DELETE},
 	} {
-		err := am3Svc.AddEventHandler(i.am3name, i.eventType, MakeHandlerAddToChan(logger, ch, i.saveDir, i.bkupDir, i.jsonAction))
+		err := am3Svc.AddEventHandler(i.am3name, i.eventType, MakeHandlerAddToChan(logger, ch, i.saveDir, i.bkupDir, i.recovType, i.jsonAction))
 		if err != nil {
 			logger.Warn("P-Handler", "err", err.Error())
 		}
@@ -85,7 +87,7 @@ func uriGetter(event eh.Event) string {
 	return g.GetURI()
 }
 
-func MakeHandlerAddToChan(logger log.Logger, ch chan persistMeta, saveDir string, bkupDir string, jsonAction int) func(eh.Event) {
+func MakeHandlerAddToChan(logger log.Logger, ch chan persistMeta, saveDir string, bkupDir string, recovType eh.EventType, jsonAction int) func(eh.Event) {
 	return func(event eh.Event) {
 		URI := uriGetter(event)
 
@@ -94,6 +96,7 @@ func MakeHandlerAddToChan(logger log.Logger, ch chan persistMeta, saveDir string
 			jsonAction,
 			saveDir,
 			bkupDir,
+			recovType,
 		}
 	}
 }
@@ -137,7 +140,7 @@ func persistJSON(logger log.Logger, bus busIntf, saveMeta map[string]persistMeta
 		case SAVE:
 			updateJSON(logger, bus, URI, metaData.fileLoc)
 		case DELETE:
-			deleteAndRestoreJSON(logger, bus.GetBus(), URI, metaData.fileLoc, metaData.bkupLoc)
+			deleteAndRestoreJSON(logger, bus.GetBus(), URI, metaData.recovType, metaData.fileLoc, metaData.bkupLoc)
 		default:
 			logger.Warn("Unknown Action", "Action", metaData.actionType, "URI", URI)
 		}
@@ -146,13 +149,13 @@ func persistJSON(logger log.Logger, bus busIntf, saveMeta map[string]persistMeta
 
 func getJSONFilePath(uri string, basePath string) string {
 	urlSplit := strings.Split(uri, "/")
-	mrdName := urlSplit[len(urlSplit)-1]
-	return basePath + mrdName + ".json"
+	name := urlSplit[len(urlSplit)-1]
+	return basePath + name + ".json"
 }
 
-func deleteAndRestoreJSON(logger log.Logger, bus eh.EventBus, uri string, mrdPerm string, mrdRO string) {
-	permFilePath := getJSONFilePath(uri, mrdRO)
-	fileToDelete := getJSONFilePath(uri, mrdPerm)
+func deleteAndRestoreJSON(logger log.Logger, bus eh.EventBus, uri string, recovType eh.EventType, perm string, RO string) {
+	permFilePath := getJSONFilePath(uri, RO)
+	fileToDelete := getJSONFilePath(uri, perm)
 
 	os.Remove(fileToDelete)
 	if fileExists(permFilePath) {
@@ -162,7 +165,7 @@ func deleteAndRestoreJSON(logger log.Logger, bus eh.EventBus, uri string, mrdPer
 			return
 		}
 
-		eventData, err := eh.CreateEventData(tele.AddMRDCommandEvent)
+		eventData, err := eh.CreateEventData(recovType)
 		if err != nil {
 			logger.Warn("deleteAndRestoreJSON", "can not create event AddMRDCommandEvent")
 			return
@@ -174,14 +177,14 @@ func deleteAndRestoreJSON(logger log.Logger, bus eh.EventBus, uri string, mrdPer
 			return
 		}
 
-		err = bus.PublishEvent(context.Background(), eh.NewEvent(tele.AddMRDCommandEvent, eventData, time.Now()))
+		err = bus.PublishEvent(context.Background(), eh.NewEvent(recovType, eventData, time.Now()))
 		if err != nil {
 			logger.Warn("deleteAndRestoreJSON", "restore did not succeed for", uri)
 		}
 	}
 }
 
-func updateJSON(logger log.Logger, bus busIntf, uri string, mrdPerm string) {
+func updateJSON(logger log.Logger, bus busIntf, uri string, perm string) {
 	// ensure that this dies eventually
 	cmd, evt, err := metric.CommandFactory(tele.GenericGETCommandEvent)()
 	if err != nil {
@@ -189,7 +192,7 @@ func updateJSON(logger log.Logger, bus busIntf, uri string, mrdPerm string) {
 	}
 
 	cmd.(*tele.GenericGETCommandData).URI = uri
-	filePath := getJSONFilePath(uri, mrdPerm)
+	filePath := getJSONFilePath(uri, perm)
 
 	outputFile, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
