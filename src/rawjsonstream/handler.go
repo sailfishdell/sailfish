@@ -9,7 +9,7 @@ import (
 	"time"
 
 	eh "github.com/looplab/eventhorizon"
-	"github.com/superchalupa/sailfish/src/fifoutil"
+	"github.com/superchalupa/sailfish/src/fileutils"
 	log "github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/looplab/event"
 )
@@ -63,12 +63,12 @@ func StartPipeHandler(logger log.Logger, pipePath string, eb eh.EventBus) {
 
 	// hotel california
 	for {
-		if !fifoutil.IsFIFO(pipePath) {
+		if !fileutils.IsFIFO(pipePath) {
 			// remove if somehow it's not a pipe. does not happen in normal circumstances
 			_ = os.Remove(pipePath) // dont care if it doesnt exist or whatever
 
 			// re-create fifo
-			err := fifoutil.MakeFifo(pipePath, 0o660) //golang octal prefix: 0o
+			err := fileutils.MakeFifo(pipePath, 0o660) //golang octal prefix: 0o
 			if err != nil {
 				logger.Crit("Error creating UDB pipe", "err", err)
 			}

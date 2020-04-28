@@ -16,7 +16,7 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/superchalupa/sailfish/cmd/metric-engine/metric"
-	"github.com/superchalupa/sailfish/src/fifoutil"
+	"github.com/superchalupa/sailfish/src/fileutils"
 
 	log "github.com/superchalupa/sailfish/src/log"
 )
@@ -325,10 +325,10 @@ func handleSubscriptionsAndLCLNotify(logger log.Logger, pipePath string, subscri
 
 		for {
 			// clear out everything at startup and recreate files
-			if !fifoutil.IsFIFO(pipePath) {
+			if !fileutils.IsFIFO(pipePath) {
 				logger.Info("remove previous pipe path and recreate", "pipePath", pipePath)
 				_ = os.Remove(pipePath)
-				err := fifoutil.MakeFifo(pipePath, 0660)
+				err := fileutils.MakeFifo(pipePath, 0660)
 				if err != nil && !os.IsExist(err) {
 					logger.Warn("Error creating Trigger (un)sub and LCL events IPC pipe", "err", err)
 				}

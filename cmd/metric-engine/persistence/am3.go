@@ -14,6 +14,7 @@ import (
 
 	"github.com/superchalupa/sailfish/cmd/metric-engine/metric"
 	tele "github.com/superchalupa/sailfish/cmd/metric-engine/telemetry"
+	"github.com/superchalupa/sailfish/src/fileutils"
 	log "github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/looplab/eventwaiter"
 )
@@ -158,7 +159,7 @@ func deleteAndRestoreJSON(logger log.Logger, bus eh.EventBus, uri string, recovT
 	fileToDelete := getJSONFilePath(uri, perm)
 
 	os.Remove(fileToDelete)
-	if fileExists(permFilePath) {
+	if fileutils.FileExists(permFilePath) {
 		jsonstr, err := ioutil.ReadFile(permFilePath)
 		if err != nil {
 			logger.Warn("deleteAndRestoreJSON", "can not read json", permFilePath)
@@ -217,12 +218,4 @@ func updateJSON(logger log.Logger, bus busIntf, uri string, perm string) {
 	if err != nil {
 		logger.Warn("updateJSON", "err", err)
 	}
-}
-
-func fileExists(fn string) bool {
-	fd, err := os.Stat(fn)
-	if os.IsNotExist(err) {
-		return false
-	}
-	return !fd.IsDir()
 }

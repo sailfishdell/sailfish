@@ -1,6 +1,6 @@
 // +build linux
 
-package fifoutil
+package fileutils
 
 import (
 	"os"
