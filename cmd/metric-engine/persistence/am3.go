@@ -191,16 +191,18 @@ func updateJSON(logger log.Logger, bus busIntf, uri string, mrdPerm string) {
 	cmd.(*tele.GenericGETCommandData).URI = uri
 	filePath := getJSONFilePath(uri, mrdPerm)
 
-	outputFile, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE, 0666)
+	outputFile, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
 	if err != nil {
 		logger.Warn("ERROR: %s\n", err.Error())
 		return
 	}
+	defer outputFile.Close()
 	cmd.SetResponseHandlers(nil, nil, outputFile)
 
 	ctx, cancel := context.WithTimeout(context.Background(), getTimeout)
 	defer cancel()
 	l := eventwaiter.NewListener(ctx, logger, bus.GetWaiter(), cmd.ResponseWaitFn())
+	defer l.Close()
 
 	l.Name = "JSON Persistence"
 	err = bus.GetBus().PublishEvent(ctx, evt)
@@ -208,8 +210,6 @@ func updateJSON(logger log.Logger, bus busIntf, uri string, mrdPerm string) {
 		logger.Warn("updateJSON", "ERROR! %s", err.Error())
 	}
 
-	defer outputFile.Close()
-	defer l.Close()
 	_, err = l.Wait(ctx)
 	if err != nil {
 		logger.Warn("updateJSON", "err", err)

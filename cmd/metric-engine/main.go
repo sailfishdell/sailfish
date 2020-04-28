@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"runtime/debug"
 	"sync"
+	"syscall"
 	"time"
 
 	flag "github.com/spf13/pflag"
@@ -86,7 +87,7 @@ func main() {
 	logger.SetupLogHandlersFromConfig(cfgMgr)
 	ctx, cancel := context.WithCancel(context.Background())
 	intr := make(chan os.Signal, 1)
-	signal.Notify(intr, os.Interrupt)
+	signal.Notify(intr, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		// wait until <CTRL>-C
 		<-intr
