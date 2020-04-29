@@ -1,4 +1,4 @@
-{ 
+{
     "@odata.type": "#MetricDefinition.v1_0_2.MetricDefinition",
     "Id": "PortSpeed",
     "Name": "Port Speed Metric Definition",
@@ -6,15 +6,18 @@
     "MetricType": "Discrete",
     "MetricDataType": "Enumeration",
     "SensingInterval": "PT60S",
-    "DiscreteValues": [ 
-        "No Link", 
-        "2 Gbps", 
-        "4 Gbps", 
-        "8 Gbps", 
-        "16 Gbps", 
-        "32 Gbps", 
-        "Unknown" 
-    ], 
+    "DiscreteValues": [
+        "No Link",
+        "2 Gbps",
+        "4 Gbps",
+        "8 Gbps",
+        "16 Gbps",
+        "32 Gbps",
+        "64 Gbps",
+        "128 Gbps",
+        "256 Gbps",
+        "Unknown"
+    ],
     "@odata.context": "/redfish/v1/$metadata#MetricDefinition.MetricDefinition",
     "@odata.id": "/redfish/v1/TelemetryService/MetricDefinitions/PortSpeed"
-} 
+}
