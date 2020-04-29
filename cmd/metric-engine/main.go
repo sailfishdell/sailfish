@@ -15,6 +15,7 @@ import (
 
 	eh "github.com/looplab/eventhorizon"
 	eventpublisher "github.com/looplab/eventhorizon/publisher/local"
+	"github.com/superchalupa/sailfish/src/fileutils"
 	log "github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/looplab/eventbus"
 	"github.com/superchalupa/sailfish/src/looplab/eventwaiter"
@@ -68,7 +69,7 @@ func parseConfigFiles(baseFileName string) *viper.Viper {
 
 	// Local config for running from the build tree
 	localFileName := "local-" + baseFileName + ".yaml"
-	if fileExists(localFileName) {
+	if fileutils.FileExists(localFileName) {
 		fmt.Fprintf(os.Stderr, "Reading %s config\n", localFileName)
 		cfgMgr.SetConfigFile(localFileName)
 		if err := cfgMgr.MergeInConfig(); err != nil {
@@ -135,12 +136,4 @@ untilExit:
 	for _, fn := range shutdownFns {
 		fn()
 	}
-}
-
-func fileExists(fn string) bool {
-	fd, err := os.Stat(fn)
-	if os.IsNotExist(err) {
-		return false
-	}
-	return !fd.IsDir()
 }

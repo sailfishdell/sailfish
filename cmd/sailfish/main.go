@@ -23,6 +23,7 @@ import (
 	applog "github.com/superchalupa/sailfish/src/log15adapter"
 
 	eh "github.com/looplab/eventhorizon"
+	"github.com/superchalupa/sailfish/src/fileutils"
 	"github.com/superchalupa/sailfish/src/http_redfish_sse"
 	"github.com/superchalupa/sailfish/src/httpinject"
 	"github.com/superchalupa/sailfish/src/httpsse"
@@ -67,7 +68,7 @@ func main() {
 	}
 
 	// Local config for running from the build tree
-	if fileExists("local-redfish.yaml") {
+	if fileutils.FileExists("local-redfish.yaml") {
 		fmt.Fprintf(os.Stderr, "Reading local-redfish.yaml config\n")
 		cfgMgr.SetConfigFile("local-redfish.yaml")
 		if err := cfgMgr.MergeInConfig(); err != nil {
@@ -388,12 +389,4 @@ func iterInterfaceIPAddrs(logger log.Logger, fn func(net.IP)) {
 			fn(ip)
 		}
 	}
-}
-
-func fileExists(fn string) bool {
-	fd, err := os.Stat(fn)
-	if os.IsNotExist(err) {
-		return false
-	}
-	return !fd.IsDir()
 }

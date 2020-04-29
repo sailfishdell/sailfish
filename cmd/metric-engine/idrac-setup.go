@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"io/ioutil"
+	"os"
 	"time"
 
 	eh "github.com/looplab/eventhorizon"
@@ -20,6 +21,7 @@ import (
 	"github.com/superchalupa/sailfish/cmd/metric-engine/triggers"
 	"github.com/superchalupa/sailfish/cmd/metric-engine/udb"
 	"github.com/superchalupa/sailfish/cmd/metric-engine/watchdog"
+	"github.com/superchalupa/sailfish/src/fileutils"
 )
 
 const (
@@ -125,12 +127,13 @@ func importPersistentSavedRedfishData(_ log.Logger, cfg *viper.Viper, bus eh.Eve
 	var persistentImportDirs = []struct {
 		name      string
 		subdir    string
+		recovDir  string
 		eventType eh.EventType
 	}{
 
-		{"MetricDefinition", cfg.GetString("persistence.topimportonlydir") + mdDir, telemetry.AddMDCommandEvent},
-		{"MetricReportDefinition", cfg.GetString("persistence.topsavedir") + mrdDir, telemetry.AddMRDCommandEvent},
-		{"Trigger", cfg.GetString("persistence.topimportonlydir") + trigDir, telemetry.CreateTriggerCommandEvent},
+		{"MetricDefinition", cfg.GetString("persistence.topimportonlydir") + mdDir, "", telemetry.AddMDCommandEvent},
+		{"MetricReportDefinition", cfg.GetString("persistence.topsavedir") + mrdDir, cfg.GetString("persistence.topimportonlydir") + mrdDir, telemetry.AddMRDCommandEvent},
+		{"Trigger", cfg.GetString("persistence.topimportonlydir") + trigDir, "", telemetry.CreateTriggerCommandEvent},
 	}
 
 	// strategy: this process *has* to succeed. If it does not, return error and we panic.
@@ -154,7 +157,13 @@ func importPersistentSavedRedfishData(_ log.Logger, cfg *viper.Viper, bus eh.Eve
 				return xerrors.Errorf("Couldnt create %s event for file(%s) import. Should never happen: %w", importDir.name, filename, err)
 			}
 			err = json.Unmarshal(jsonstr, eventData)
-			if err != nil {
+			if err != nil && len(importDir.recovDir) != 0 {
+				if fileutils.FileExists(importDir.subdir) {
+					fileutils.Copy(importDir.recovDir+file.Name(), filename)
+				} else {
+					os.Remove(filename)
+				}
+			} else if err != nil {
 				return xerrors.Errorf("Malformed %s JSON file(%s), error unmarshalling JSON: %w", importDir.name, filename, err)
 			}
 
