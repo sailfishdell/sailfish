@@ -277,7 +277,8 @@ func MakeHandlerSubscriberCPURegisters(logger log.Logger, cpuIERRFile string, bu
 	}
 }
 
-const waitForCPUBin = 250 * time.Millisecond
+const sleepTimeCPUBin = 250 * time.Millisecond
+const totalCPUBinTimeout = 60 * time.Second
 
 func CPURegisterFileHandling(logger log.Logger, bus eh.EventBus, cpubinfile string) {
 	i := int64(0)
@@ -286,11 +287,11 @@ func CPURegisterFileHandling(logger log.Logger, bus eh.EventBus, cpubinfile stri
 		if err == nil {
 			break // yay, it exists
 		}
-		if i++; i > (int64(60*time.Second) / int64(waitForCPUBin)) {
+		if i++; i > (int64(totalCPUBinTimeout) / int64(sleepTimeCPUBin)) {
 			logger.Crit("WAITED LONG ENOUGH, EXITING")
 			return
 		}
-		time.Sleep(waitForCPUBin)
+		time.Sleep(sleepTimeCPUBin)
 	}
 
 	publishHelper(logger, bus, metric.ReportGenerated, &metric.ReportGeneratedData{MRDName: "CPURegisters", MRName: "CPURegisters"})
