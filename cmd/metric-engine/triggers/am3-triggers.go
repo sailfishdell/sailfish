@@ -52,6 +52,7 @@ func StartupTriggerProcessing(logger log.Logger, cfg *viper.Viper, am3Svc eventH
 	// setup programatic defaults. can be overridden in config file
 	cfg.SetDefault("triggers.clientIPCPipe", "/var/run/telemetryservice/telsubandlclnotifypipe")
 	cfg.SetDefault("triggers.subList", "/var/run/telemetryservice/telsvc_subscriptioninfo.json")
+	cfg.SetDefault("triggers.CPURegisterBINFile", "/flash/data0/IERR_LOG/IERR_LOG1/IERRMSRBIN.bin")
 
 	// handle Subscription and LCL event related notifications
 	handleSubscriptionsAndLCLNotify(logger, cfg.GetString("triggers.clientIPCPipe"),
@@ -61,7 +62,7 @@ func StartupTriggerProcessing(logger log.Logger, cfg *viper.Viper, am3Svc eventH
 	//  - Metric report generated event
 	//  - New subscription request event
 	//  - New unsubscription request event
-	err := setupEventHandlers(logger, d.GetBus(), am3Svc, activeSubs, cfg.GetString("triggers.subList"))
+	err := setupEventHandlers(logger, d.GetBus(), am3Svc, activeSubs, cfg)
 	if err != nil {
 		return err
 	}
@@ -217,8 +218,14 @@ func MakeHandlerPrintSubscribers(logger log.Logger, activeSubs map[string]*os.Fi
 	}
 }
 
-func setupEventHandlers(logger log.Logger, bus eh.EventBus, am3Svc eventHandlingService,
-	activeSubs map[string]*os.File, subscriberListFile string) error {
+func setupEventHandlers(
+	logger log.Logger,
+	bus eh.EventBus,
+	am3Svc eventHandlingService,
+	activeSubs map[string]*os.File,
+	cfg *viper.Viper, // don't pass this anywhere out of this func
+) error {
+	subscriberListFile := cfg.GetString("triggers.subList")
 	// set up the event handler that will send triggers on the report on report generated events.
 	err := am3Svc.AddEventHandler("Metric Report Generated", metric.ReportGenerated,
 		MakeHandlerReportGenerated(logger, activeSubs, bus))
@@ -246,7 +253,48 @@ func setupEventHandlers(logger log.Logger, bus eh.EventBus, am3Svc eventHandling
 	if err != nil {
 		return xerrors.Errorf("Failed to register event handler: %w", err)
 	}
+
+	//Subscription only for processing CPU registers
+	cpuIERRFile := cfg.GetString("triggers.CPURegisterBINFile")
+	err = am3Svc.AddEventHandler("Generate Metric Report", metric.GenerateReportCommandEvent, MakeHandlerSubscriberCPURegisters(logger, cpuIERRFile, bus))
 	return nil
+}
+
+// Subscribe request am3 service notification handler
+func MakeHandlerSubscriberCPURegisters(logger log.Logger, cpuIERRFile string, bus eh.EventBus) func(eh.Event) {
+	return func(event eh.Event) {
+		report, ok := event.Data().(*metric.GenerateReportCommandData)
+		if !ok {
+			logger.Crit("Trigger report generated handler got an invalid data event", "event",
+				event, "eventdata", event.Data())
+			return
+		}
+		if report.MRDName != "CPURegisters" {
+			return
+		}
+
+		go CPURegisterFileHandling(logger, bus, cpuIERRFile)
+	}
+}
+
+const waitForCPUBin = 250 * time.Millisecond
+
+func CPURegisterFileHandling(logger log.Logger, bus eh.EventBus, cpubinfile string) {
+	i := int64(0)
+	for {
+		_, err := os.Stat(cpubinfile)
+		if err == nil {
+			break // yay, it exists
+		}
+		if i++; i > (int64(60*time.Second) / int64(waitForCPUBin)) {
+			logger.Crit("WAITED LONG ENOUGH, EXITING")
+			return
+		}
+		time.Sleep(waitForCPUBin)
+	}
+
+	publishHelper(logger, bus, metric.ReportGenerated, &metric.ReportGeneratedData{MRDName: "CPURegisters", MRName: "CPURegisters"})
+	return
 }
 
 // publishHelper will log/eat the error from PublishEvent since we can't do anything useful with it
