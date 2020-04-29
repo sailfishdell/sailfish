@@ -94,27 +94,26 @@ UDB-Metric-Import:
         5000000000 as 'SensorSlack',
         true as 'RequiresExpand',
 
-        LastWeekMinPowerTime as 'Metric-LastWeekMinPowerTime',
+        strftime('%s', LastWeekMinPowerTime, 'unixepoch', 'utc') as 'Metric-LastWeekMinPowerTime',
         LastWeekMinPower as 'Metric-LastWeekMinPower',
-        LastWeekMaxPowerTime as 'Metric-LastWeekMaxPowerTime',
+        strftime('%s', LastWeekMaxPowerTime, 'unixepoch', 'utc') as 'Metric-LastWeekMaxPowerTime',
         LastWeekMaxPower as 'Metric-LastWeekMaxPower',
         LastWeekAvgPower as 'Metric-LastWeekAvgPower',
 
-        LastDayMinPowerTime as 'Metric-LastDayMinPowerTime',
+        strftime('%s', LastDayMinPowerTime, 'unixepoch', 'utc') as 'Metric-LastDayMinPowerTime',
         LastDayMinPower as 'Metric-LastDayMinPower',
-        LastDayMaxPowerTime as 'Metric-LastDayMaxPowerTime',
-        LastDayMaxPower as 'Metric-LastDayMaxPower',
+        strftime('%s', LastDayMaxPowerTime, 'unixepoch', 'utc') as 'Metric-LastDayMaxPowerTime',
         LastDayAvgPower as 'Metric-LastDayAvgPower',
 
-        LastHourMinPowerTime as 'Metric-LastHourMinPowerTime',
+        strftime('%s', LastHourMinPowerTime, 'unixepoch', 'utc') as 'Metric-LastHourMinPowerTime',
         LastHourMinPower as 'Metric-LastHourMinPower',
-        LastHourMaxPowerTime as 'Metric-LastHourMaxPowerTime',
+        strftime('%s', LastHourMaxPowerTime, 'unixepoch', 'utc') as 'Metric-LastHourMaxPowerTime',
         LastHourMaxPower as 'Metric-LastHourMaxPower',
         LastHourAvgPower as 'Metric-LastHourAvgPower',
 
-        LastMinuteMinPowerTime as 'Metric-LastMinuteMinPowerTime',
+        strftime('%s', LastMinuteMinPowerTime, 'unixepoch', 'utc') as 'Metric-LastMinuteMinPowerTime',
         LastMinuteMinPower as 'Metric-LastMinuteMinPower',
-        LastMinuteMaxPowerTime as 'Metric-LastMinuteMaxPowerTime',
+        strftime('%s', LastMinuteMaxPowerTime, 'unixepoch', 'utc') as 'Metric-LastMinuteMaxPowerTime',
         LastMinuteMaxPower as 'Metric-LastMinuteMaxPower',
         LastMinuteAvgPower as 'Metric-LastMinuteAvgPower'
 
@@ -498,6 +497,8 @@ UDB-Metric-Import:
       FROM TblGPUStatisticsObj
       WHERE Timestamp > :HWM
 
+
+
   GPU-Health:
     Type: MetricColumns
     # SingleRecordEtag is the underlying HWM, so we can scan the table more often
@@ -517,17 +518,54 @@ UDB-Metric-Import:
         1000000000 as 'SensorSlack',
         true as 'RequiresExpand',
 
-        BoardPowerSupplyStatus as 'Metric-BoardPowerSupplyStatus',
+        CASE BoardPowerSupplyStatus
+        WHEN "Not Applicable"  then "Not Applicable"
+        WHEN "SufficientPower" then "SufficientPower"
+        WHEN "UnderPowered"    then "UnderPowered"
+        ELSE null
+        END as "Metric-BoardPowerSupplyStatus",
+
         BoardTemp              as 'Metric-BoardTemperature',
-        GPUHealth              as 'Metric-GPUHealth',
-        GPUStatus              as 'Metric-GPUStatus',
+        CASE GPUHealth
+        WHEN "Degraded"  then "Degraded"
+        WHEN "OK" then "OK"
+        WHEN "Critical" then "Critical"
+        WHEN "Unknown" then "Unknown"
+        ELSE null
+        END as 'Metric-GPUHealth',
+
+        CASE GPUStatus
+        WHEN "Available"  then "Available"
+        WHEN "Not Applicable" then "Not Applicable"
+        WHEN "Unavailable" then "Unavailable"
+        ELSE null
+        END as 'Metric-GPUStatus',
+
         MemoryTemp             as 'Metric-MemoryTemperature',
-        PowerBrakeState        as 'Metric-PowerBrakeState',
+        CASE PowerBrakeState
+        WHEN "Not Applicable"  then "Available"
+        WHEN "Released" then "Not Applicable"
+        WHEN "Set" then "Unavailable"
+        ELSE null
+        END as 'Metric-PowerBrakeState',
+
         PowerConsumption       as 'Metric-PowerConsumption',
-        PowerSupplyStatus      as 'Metric-PowerSupplyStatus',
+        CASE PowerSupplyStatus
+        WHEN "Disabled"  then "Disabled"
+        WHEN "Enabled" then "Enabled"
+        WHEN "Not Applicable" then "Not Applicable"
+        ELSE null
+        END as 'Metric-PowerSupplyStatus',
+
         PrimaryGpuTemp         as 'Metric-PrimaryTemperature',
         SecondaryGpuTemp       as 'Metric-SecondaryTemperature',
-        ThermalAlertState      as 'Metric-ThermalAlertState'
+        CASE ThermalAlertState
+        WHEN "Not Applicable" then "Not Applicable"
+        WHEN "NotPending"     then "NotPending"
+        WHEN "Pending"        then "Pending"
+        ELSE null
+        END as 'Metric-ThermalAlertState'
+
       FROM TblGPUHealthObj
       WHERE Timestamp > :HWM
 
@@ -644,11 +682,13 @@ UDB-Metric-Import:
           when 0 then "Non-operational"
           when 1 then "Operational"
           when 2 then "Unknown"
+          else null
         end as 'Metric-OSDriverState',
         case TblNic_Port_Stats_Obj.LinkStatus
           when 0 then "Down"
           when 1 then "Up"
           when 2 then "Unknown"
+          else null
         end as 'Metric-LinkStatus',
 
         case
@@ -697,11 +737,13 @@ UDB-Metric-Import:
           when 0 then "Non-operational"
           when 1 then "Operational"
           when 2 then "Unknown"
+          else null
         end as 'Metric-PartitionOSDriverState',
         case TblNic_Partition_Stats_Obj.PartitionLinkStatus
           when 0 then "Down"
           when 1 then "Up"
           when 2 then "Unknown"
+          else null
         end as 'Metric-PartitionLinkStatus',
 
         case
@@ -1181,6 +1223,7 @@ internal:
         WHERE
           ( rd2mm.ReportDefinitionID = :MRDID ) AND
           ( MV.Timestamp > :Start )
+
 
   sqlx:
     find_onchange_mrd_by_mm_instance: |
