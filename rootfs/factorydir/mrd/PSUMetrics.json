@@ -9,7 +9,7 @@
   "SuppressRepeatedMetricValue": false,
   "ReportActions": ["RedfishEvent", "LogToMetricReportsCollection"],
   "Metrics": [
-    {"MetricID": "RPMReading"},
+    {"MetricID": "RPMReading", "OEM": {"Dell": {"Source": "psu-sensor"}}},
     {"MetricID": "TemperatureReading", "OEM": {"Dell": {"Source": "psu-sensor" }}}
   ]
 }
