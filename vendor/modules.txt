@@ -10,6 +10,11 @@ github.com/etcd-io/bbolt
 github.com/fsnotify/fsnotify
 # github.com/go-stack/stack v1.8.0
 github.com/go-stack/stack
+# github.com/go-stomp/stomp v2.0.5+incompatible
+github.com/go-stomp/stomp
+github.com/go-stomp/stomp/frame
+# github.com/golang/protobuf v1.3.5
+github.com/golang/protobuf/proto
 # github.com/gorilla/context v1.1.1
 github.com/gorilla/context
 # github.com/gorilla/mux v1.6.2
