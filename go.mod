@@ -9,6 +9,7 @@ require (
 	github.com/go-stomp/stomp v2.0.5+incompatible
 	github.com/golang/protobuf v1.3.5
 	github.com/gorilla/context v1.1.1 // indirect
+	github.com/gorilla/handlers v1.4.2
 	github.com/gorilla/mux v1.6.2
 	github.com/inconshreveable/log15 v0.0.0-20180818164646-67afb5ed74ec
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect

@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 
 	log "github.com/superchalupa/sailfish/src/log"
@@ -97,7 +98,7 @@ func (st *ServerTracker) startServer(handler http.Handler, listen string) {
 		st.logger.Crit("HTTP listener starting on " + addr)
 		s := &http.Server{
 			Addr:           addr,
-			Handler:        handler,
+			Handler:        handlers.LoggingHandler(os.Stderr, handler),
 			MaxHeaderBytes: MaxHeaderBytes,
 			ReadTimeout:    ReadTimeout,
 			// cannot use writetimeout if we are streaming
@@ -113,7 +114,7 @@ func (st *ServerTracker) startServer(handler http.Handler, listen string) {
 		st.logger.Crit("UNIX SOCKET listener starting on " + addr)
 		os.Remove(addr)
 		s := &http.Server{
-			Handler:        handler,
+			Handler:        handlers.LoggingHandler(os.Stderr, handler),
 			MaxHeaderBytes: MaxHeaderBytes,
 			ReadTimeout:    ReadTimeout,
 		}
