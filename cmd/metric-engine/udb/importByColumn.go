@@ -78,14 +78,15 @@ func (meta *importByColumn) wrappedImportByColumn(totalEvents *int, totalRows *i
 		condSetHWMForSource(meta.dataSource, ts)
 
 		baseEvent := metric.MetricValueEventData{
-			Timestamp:        metric.SQLTimeInt{Time: time.Unix(0, ts)},
-			Context:          getString(mm, "Context"),
-			FQDD:             getString(mm, "FQDD"),
-			FriendlyFQDD:     getString(mm, "FriendlyFQDD"),
-			Source:           meta.sourceName,
-			MVRequiresExpand: getInt64(mm, "RequiresExpand") == 1,
-			MVSensorSlack:    time.Duration(getInt64(mm, "SensorSlack")),
-			MVSensorInterval: time.Duration(getInt64(mm, "SensorInterval")),
+			Timestamp:         metric.SQLTimeInt{Time: time.Unix(0, ts)},
+			Context:           getString(mm, "Context"),
+			FQDD:              getString(mm, "FQDD"),
+			FriendlyFQDD:      getString(mm, "FriendlyFQDD"),
+			Source:            meta.sourceName,
+			MVSourceTraceInfo: getString(mm, "MVSourceTraceInfo"),
+			MVRequiresExpand:  getInt64(mm, "RequiresExpand") == 1,
+			MVSensorSlack:     time.Duration(getInt64(mm, "SensorSlack")),
+			MVSensorInterval:  time.Duration(getInt64(mm, "SensorInterval")),
 		}
 
 		for k, v := range mm {

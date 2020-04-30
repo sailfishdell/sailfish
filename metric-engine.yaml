@@ -246,6 +246,7 @@ UDB-Metric-Import:
         '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
+        'SHM.db::TblsPSUMetrics::' || ROWID as MVSourceTraceInfo,
 
         -- MEB 2020-02-07 - observed mostly reliable 5s intervals. Sometimes 10s. Possibly suppressed upstream
         -- Sailaja 2020-03-11 Backend i.e telemetrypop reports every minute.
@@ -272,6 +273,7 @@ UDB-Metric-Import:
         '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
+        'SHM.db::TblsStorageSensor::' || ROWID as MVSourceTraceInfo,
 
         -- MEB 2020-02-07 - TODO -> Need info from Sailaja about the intervals here
         -- My data set has no recurrence on these values, bug in telemetrypop? Or are they really not changing? Too much suppression happening.
@@ -299,6 +301,7 @@ UDB-Metric-Import:
         '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
+        'SHM.db::TblsMemorySensor::' || ROWID as MVSourceTraceInfo,
 
         -- MEB 2020-02-07 - TODO -> Need info from Sailaja about the intervals here
         -- My data set has no recurrence on these values, bug in telemetrypop? Or are they really not changing? Too much suppression happening.
@@ -326,6 +329,7 @@ UDB-Metric-Import:
         '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
+        'SHM.db::TblsFPGASensor::' || ROWID as MVSourceTraceInfo,
 
         -- MEB 2020-02-07 - TODO -> Need info from Sailaja about the intervals here
         -- No hardware in MEB test machine. Need info.
@@ -386,6 +390,7 @@ UDB-Metric-Import:
         3600000000000 as 'SensorInterval',
         60000000000 as 'SensorSlack',
         true as 'RequiresExpand',
+        'DMLiveObjectDatabase.db::TblRAID_PDSmartData_NVMe::' || ROWID as MVSourceTraceInfo,
 
         smartData_DOT_percentageUsed as 'Metric-PercentageUsed',
         smartData_DOT_criticalWarning as 'Metric-CriticalWarning',
@@ -432,6 +437,7 @@ UDB-Metric-Import:
          '/redfish/v1/FIXME/' || FQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
+        'DMLiveObjectDatabase.db::TblRAID_PDSmartData_SAS_SATA::' || ROWID as MVSourceTraceInfo,
 
         3600000000000 as 'SensorInterval',
         60000000000 as 'SensorSlack',
@@ -474,6 +480,7 @@ UDB-Metric-Import:
         FQDD as Context,
          '/redfish/v1/FIXME/' || FQDD as Property,
         FQDD as FQDD,
+        'DMLiveObjectDatabase.db::TblGPUStatisticsObj::' || ROWID as MVSourceTraceInfo,
 
         600000000000 as 'SensorInterval',
         60000000000 as 'SensorSlack',
@@ -512,6 +519,7 @@ UDB-Metric-Import:
         FQDD as Context,
          '/redfish/v1/FIXME/' || FQDD as Property,
         FQDD as FQDD,
+        'DMLiveObjectDatabase.db::TblGPUHealthObj::' || ROWID as MVSourceTraceInfo,
 
         5000000000 as 'SensorInterval',
         1000000000 as 'SensorSlack',
@@ -549,6 +557,7 @@ UDB-Metric-Import:
         TblNic_Port_Stats_Obj.hdr_DOT_fqdd as Context,
          '/redfish/v1/FIXME/' || TblNic_Port_Stats_Obj.hdr_DOT_fqdd as Property,
         TblNic_Port_Stats_Obj.hdr_DOT_fqdd as FQDD,
+        'DMLiveObjectDatabase.db::TblNic_Port_Stats_Obj::' || TblNic_Port_Stats_Obj.ROWID as MVSourceTraceInfo,
 
         -- MEB 2020-02-07 - observed 5s intervals
         30000000000 as 'SensorInterval',  -- 5s interval w/ 1s slack
@@ -774,6 +783,7 @@ UDB-Metric-Import:
         5000000000 as 'SensorInterval',
         1000000000 as 'SensorSlack',
         true as 'RequiresExpand',
+        'DMLiveObjectDatabase.db::TblHIISensorInfo_obj::' || ROWID as MVSourceTraceInfo,
 
         currentTemp as 'Metric-TemperatureReading'
       FROM TblHIISensorInfo_obj
@@ -793,6 +803,7 @@ UDB-Metric-Import:
         '/redfish/v1/FIXME/' || FQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
+        'DMLiveObjectDatabase.db::TblFanExtObj::' || ROWID as MVSourceTraceInfo,
 
         5000000000 as 'SensorInterval',
         1000000000 as 'SensorSlack',
@@ -822,6 +833,7 @@ UDB-Metric-Import:
 
         -- property not quite right, as PS sensors are an exception
         printf('/redfish/v1/Dell/Systems/System.Embedded.1/DellNumericSensor/%s', replace(replace(Key, '|', '_0x7c_') , '#', '_0x23_')) as Property,
+        'DMLiveObjectDatabase.db::TblProbeObj::' || TblProbeObj.ROWID as MVSourceTraceInfo,
 
         CASE ObjType
         WHEN 0x16 then 'TemperatureReading'
@@ -867,111 +879,6 @@ UDB-Metric-Import:
       WHERE
         Timestamp > :HWM AND
         Name != 'IGNORE'
-
-  Sensor:
-    Type: DISABLED
-    # TODO: UNDERLYING TABLE NEEDS HWM.
-    # TODO: Underlying view table missing FQDD, need to add
-    ScanInterval: 0
-    WaitInterval: 5
-    # CIMVIEW_DCIM_NumericSensor is a view, do db change notifications on underlying tables
-    DBChange:
-      DMLiveObjectDatabase.db:
-        TblProbeObj:
-    Query: |
-      SELECT
-        cast( (julianday('now') - 2440587.5)*86400 * 1000000000 as integer) as Timestamp,
-        case
-          when SensorType = 1 then
-          case
-            when DeviceID = 'iDRAC.Embedded.1#SystemBoardCPUUsage' then 'CPUUsage'
-            when DeviceID = 'iDRAC.Embedded.1#SystemBoardSYSUsage' then 'SystemUsage'
-            when DeviceID = 'iDRAC.Embedded.1#SystemBoardMEMUsage' then 'MemoryUsage'
-            when DeviceID = 'iDRAC.Embedded.1#SystemBoardIOUsage'  then 'IOUsage'
-          end
-          when SensorType = 2 then 'TemperatureReading'
-          when SensorType = 3 then 'VoltageReading'
-          when SensorType = 5 then 'RPMReading'
-          else "InvalidMetric-" || SensorType
-        end as Name,
-
-        -- manually expand x^y since sqlite is missing a pow() or exp() function
-        -- TODO: check that the positive/negative is correct here since this might be reversed
-        CASE UnitModifier
-        WHEN -6 THEN CurrentReading * 1000000.0
-        WHEN -5 THEN CurrentReading * 100000.0
-        WHEN -4 THEN CurrentReading * 10000.0
-        WHEN -3 THEN CurrentReading * 1000.0
-        WHEN -2 THEN CurrentReading * 100.0
-        WHEN -1 THEN CurrentReading * 10.0
-        WHEN  0 THEN CurrentReading * 1.0
-        WHEN  1 THEN CurrentReading / 10.0
-        WHEN  2 THEN CurrentReading / 100.0
-        WHEN  3 THEN CurrentReading / 1000.0
-        WHEN  4 THEN CurrentReading / 10000.0
-        WHEN  5 THEN CurrentReading / 100000.0
-        WHEN  6 THEN CurrentReading / 1000000.0
-        END as Value,
-
-        printf('/redfish/v1/Dell/Systems/System.Embedded.1/DellNumericSensor/%s', replace(replace(DeviceID, '|', '_0x7c_') , '#', '_0x23_')) as Property,
-        ElementName as Context,
-        DeviceID as FQDD,
-        ElementName as FriendlyFQDD
-        5000000000 as 'SensorInterval',
-        1000000000 as 'SensorSlack',
-        true as 'RequiresExpand'
-      FROM CIMVIEW_DCIM_NumericSensor
-      WHERE Timestamp > :HWM
-
-  PSSensor:
-    # TODO: UNDERLYING TABLE NEEDS HWM.
-    Type: DISABLED
-    # CIMVIEW_DCIM_PSNumericSensor is view, do db change on underlying tables
-    DBChange:
-      DMLiveObjectDatabase.db:
-        TblProbeObj:
-    ScanInterval: 0
-    WaitInterval: 5
-    Query: |
-      SELECT
-        cast( (julianday('now') - 2440587.5)*86400 * 1000000000 as integer) as Timestamp,
-        case SensorType
-          when 13 then
-          case
-            when DeviceID = 'iDRAC.Embedded.1#SystemBoardPwrConsumption' then 'SystemBoardPowerConsumption'
-            when Description = "Power Supply Power Consumption" then "WattsReading"
-            else 'InvalidMetric-' || DeviceID
-          end
-          else "InvalidMetric-" || SensorType
-        end as Name,
-
-        -- manually expand x^y since sqlite is missing a pow() or exp() function
-        -- TODO: check that the positive/negative is correct here since this might be reversed
-        CASE UnitModifier
-        WHEN -6 THEN CurrentReading * 1000000.0
-        WHEN -5 THEN CurrentReading * 100000.0
-        WHEN -4 THEN CurrentReading * 10000.0
-        WHEN -3 THEN CurrentReading * 1000.0
-        WHEN -2 THEN CurrentReading * 100.0
-        WHEN -1 THEN CurrentReading * 10.0
-        WHEN  0 THEN CurrentReading * 1.0
-        WHEN  1 THEN CurrentReading / 10.0
-        WHEN  2 THEN CurrentReading / 100.0
-        WHEN  3 THEN CurrentReading / 1000.0
-        WHEN  4 THEN CurrentReading / 10000.0
-        WHEN  5 THEN CurrentReading / 100000.0
-        WHEN  6 THEN CurrentReading / 1000000.0
-        END as Value,
-
-        printf('/redfish/v1/Dell/Systems/System.Embedded.1/DellPSNumericSensor/%s', replace(replace(DeviceID, '|', '_0x7c_') , '#', '_0x23_')) as Property,
-        ElementName as Context,
-        DeviceID as FQDD,
-        ElementName as FriendlyFQDD,
-        5000000000 as 'SensorInterval',
-        1000000000 as 'SensorSlack',
-        true as 'RequiresExpand'
-      FROM CIMVIEW_DCIM_PSNumericSensor
-      WHERE Timestamp > :HWM
 
 internal:
   # we can put the sql statements that we use internally in metric engine here
@@ -1098,8 +1005,8 @@ internal:
 
     insert_metric_instance: |
       INSERT INTO MetricInstance
-             ( Name,  FQDD,  Property,  Context,  Function,                      Duration,  Label,  CollectionScratch, LastValue, LastTS,  FlushTime,  SuppressDups, Dirty,    RequiresExpand,    SensorInterval,    SensorSlack,  Source)
-      VALUES (:Name, :FQDD, :Property, :Context, :CollectionFunction, :CollectionDuration, :Label, :CollectionScratch, '',        0,      :FlushTime, :SuppressDups, false, :MVRequiresExpand, :MVSensorInterval, :MVSensorSlack, :Source)
+             ( Name,  FQDD,  Property,  Context,  Function,                      Duration,  Label,  CollectionScratch, LastValue, LastTS,  FlushTime,  SuppressDups, Dirty,    RequiresExpand,    SensorInterval,    SensorSlack,  Source,  SourceTraceInfo)
+      VALUES (:Name, :FQDD, :Property, :Context, :CollectionFunction, :CollectionDuration, :Label, :CollectionScratch, '',        0,      :FlushTime, :SuppressDups, false, :MVRequiresExpand, :MVSensorInterval, :MVSensorSlack, :Source, :MVSourceTraceInfo)
 
     find_metric_instance: |
       select
@@ -1136,7 +1043,8 @@ internal:
         MI.Dirty,
         MI.RequiresExpand as MIRequiresExpand,
         MI.SensorInterval as MISensorInterval,
-        MI.SensorSlack    as MISensorSlack
+        MI.SensorSlack    as MISensorSlack,
+        MI.SourceTraceInfo as MISourceTraceInfo
       from MetricInstance as MI
       where
         MI.Name=:Name and
@@ -1159,7 +1067,8 @@ internal:
         MI.Dirty,
         MI.RequiresExpand as MIRequiresExpand,
         MI.SensorInterval as MISensorInterval,
-        MI.SensorSlack    as MISensorSlack
+        MI.SensorSlack    as MISensorSlack,
+        MI.SourceTraceInfo as MISourceTraceInfo
       from MetricInstance as MI
       inner join MetricMetaToInstance as MMTI on MI.ID = MMTI.InstanceID
       inner join ReportDefinitionToMetricMeta as rd2mm on MMTI.MetaID = rd2mm.MetaID
@@ -1336,7 +1245,7 @@ createdb:
   - "PRAGMA mmap_size=262144;"         # N bytes - Not "wasting any ram here as it's all in tmpfs already
   - "PRAGMA main.max_page_count = 2560"  # enforce upper limit of 10MB on DB
   - "PRAGMA cache=shared;"
-  - "PRAGMA cache_size=0;"   # -N -> N kilobytes. Default without '-' means "Pages"
+  - "PRAGMA cache_size=-64;"   # -N -> N kilobytes. Default without '-' means "Pages"
 
   - |
       CREATE TABLE IF NOT EXISTS MetricReportDefinition
@@ -1414,7 +1323,7 @@ createdb:
         RequiresExpand    BOOLEAN NOT NULL DEFAULT TRUE, -- should we automatically expand gaps
         SensorInterval    INTEGER NOT NULL DEFAULT 0,    -- set to the backend interval
         SensorSlack       INTEGER NOT NULL DEFAULT 0,    -- how much subsequent timestamps can drift
-        SourceTraceInfo   TEXT    NOT NULL DEFAULT '',   -- DB:ROWID -- can look for sqlite operation==(delete) and turn off sensor interval
+        SourceTraceInfo   TEXT    NOT NULL DEFAULT '',   -- DB:TABLE:ROWID -- can look for sqlite operation==(delete) and turn off sensor interval
         Dirty             BOOLEAN NOT NULL DEFAULT TRUE, -- set to dirty any time MRD changes, clean once a metric has been processed
 
         -- indexes and constraints
