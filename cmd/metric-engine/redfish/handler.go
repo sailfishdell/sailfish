@@ -11,15 +11,16 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/spf13/viper"
 	"golang.org/x/xerrors"
 
 	eh "github.com/looplab/eventhorizon"
 
+	"github.com/superchalupa/sailfish/cmd/metric-engine/eemi"
 	"github.com/superchalupa/sailfish/cmd/metric-engine/metric"
 	"github.com/superchalupa/sailfish/cmd/metric-engine/telemetry"
 	log "github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/looplab/eventwaiter"
+	"github.com/superchalupa/sailfish/src/ocp/am3"
 )
 
 const (
@@ -86,20 +87,20 @@ func (rf *RFServer) AddHandlersToRouter(m *mux.Router) {
 	m.PathPrefix("/redfish/v1/TelemetryService").HandlerFunc(rf.makeCommand(telemetry.GenericGETCommandEvent)).Methods("GET")
 }
 
-type eventHandler interface {
-	AddEventHandler(string, eh.EventType, func(eh.Event)) error
-}
-
-func Startup(logger log.Logger, cfg *viper.Viper, am3Svc eventHandler, d busComponents) error {
+func Startup(logger log.Logger, am3Svc *am3.Service, d busComponents) error {
 	// Important: don't leak 'cfg' outside the scope of this function!
-	err := am3Svc.AddEventHandler("Submit Test Metric Report", SubmitTestMetricReportCommandEvent, MakeHandlerSubmitTestMR(logger, d.GetBus()))
+
+	// specifically set up promise and call now, this will block until message registry is set up
+	msgreg := eemi.DeferredGetMsgreg(logger, d)()
+
+	err := am3Svc.AddEventHandler("Submit Test Metric Report", SubmitTestMetricReportCommandEvent, MakeHandlerSubmitTestMR(logger, msgreg, d.GetBus()))
 	if err != nil {
 		return xerrors.Errorf("could not add redfish am3 event handlers: %w", err)
 	}
 	return nil
 }
 
-func MakeHandlerSubmitTestMR(logger log.Logger, bus eh.EventBus) func(eh.Event) {
+func MakeHandlerSubmitTestMR(logger log.Logger, msgreg eemi.MessageRegistry, bus eh.EventBus) func(eh.Event) {
 	// TODO: this function will need to open pipes and write out the MR
 	return func(event eh.Event) {
 		testMR, ok := event.Data().(*SubmitTestMetricReportCommandData)
@@ -111,7 +112,7 @@ func MakeHandlerSubmitTestMR(logger log.Logger, bus eh.EventBus) func(eh.Event) 
 		fmt.Printf("\nSUBMIT TEST METRIC REPORT\n")
 
 		// Generate a "response" event that carries status back to initiator
-		respEvent, err := testMR.NewResponseEvent(nil)
+		respEvent, err := testMR.NewResponseEvent(nil, msgreg)
 		if err != nil {
 			logger.Crit("Error creating response event", "err", err, "testmr", testMR)
 			return

@@ -2,6 +2,8 @@ package response
 
 import (
 	"encoding/json"
+
+	"github.com/superchalupa/sailfish/cmd/metric-engine/eemi"
 )
 
 const HTTPStatusOK = 200
@@ -20,15 +22,15 @@ func NewResponse() *Response {
 	}
 }
 
-func (ra *Response) AddPropertyExtendedInfo(property string, message Message) *Response {
+func (ra *Response) AddPropertyExtendedInfo(property string, message eemi.EEMI) *Response {
 	property += "@Message.ExtendedInfo"
 	p, ok := ra.Properties[property]
 	if !ok {
-		p = []Message{}
+		p = []eemi.EEMI{}
 	}
-	ma, ok := p.([]Message)
+	ma, ok := p.([]eemi.EEMI)
 	if !ok {
-		ma = []Message{}
+		ma = []eemi.EEMI{}
 	}
 	ma = append(ma, message)
 	ra.Properties[property] = ma
@@ -55,32 +57,4 @@ func (ra Response) GetHeaders() map[string]string {
 
 func (ra Response) MarshalJSON() ([]byte, error) {
 	return json.Marshal(ra.Properties)
-}
-
-// TODO: look up messages
-type MessageFactory struct {
-}
-
-func NewMessageFactory() *MessageFactory {
-	return &MessageFactory{}
-}
-
-type Message struct {
-	MessageID         string   `json:"MessageId"`
-	Message           string   `json:"Message"`
-	MessageArgs       []string `json:"MessageArgs"`
-	RelatedProperties []string `json:"RelatedProperties"`
-	Severity          string   `json:"Severity"`
-	Resolution        string   `json:"Resolution"`
-}
-
-func (mf MessageFactory) NewMessage(messageID string, args []string, relatedproperties []string) Message {
-	return Message{
-		MessageID:         messageID,
-		Message:           "LOOKUP MESSAGE",
-		MessageArgs:       args,
-		RelatedProperties: relatedproperties,
-		Severity:          "LOOKUP SEVERITY",
-		Resolution:        "LOOKUP RESOLUTION",
-	}
 }

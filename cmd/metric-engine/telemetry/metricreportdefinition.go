@@ -365,7 +365,8 @@ func (factory *telemetryManager) get(uri string, resp io.Writer) error {
 	return err
 }
 
-func (factory *telemetryManager) updateMRD(reportDef string, updates json.RawMessage) (err error, finalMRD MetricReportDefinition) {
+// nolint: funlen // straight line code isn't too complicated right now so being a little over is ok
+func (factory *telemetryManager) updateMRD(reportDef string, updates json.RawMessage) (finalMRD MetricReportDefinition, err error) {
 	err = factory.wrapWithTX(func(tx *sqlx.Tx) error {
 		// step 1: LOAD existing report definition
 		mrd := MetricReportDefinition{
@@ -391,8 +392,6 @@ func (factory *telemetryManager) updateMRD(reportDef string, updates json.RawMes
 		if err != nil {
 			return err
 		}
-
-		factory.logger.Debug("Updating MRD", "OLD_MRD", mrd.MetricReportDefinitionData, "NEW_MRD", newMRD.MetricReportDefinitionData)
 
 		// step 4: update internal bookkeeping tables
 		if newMRD.Type != metric.Periodic {
@@ -434,8 +433,7 @@ func (factory *telemetryManager) updateMRD(reportDef string, updates json.RawMes
 
 		finalMRD = newMRD
 
-		if !newMRD.Enabled {
-			// we are done if report not enabled
+		if !newMRD.Enabled { // we are done if report not enabled
 			return nil
 		}
 
@@ -443,15 +441,15 @@ func (factory *telemetryManager) updateMRD(reportDef string, updates json.RawMes
 		factory.PendingInsert[newMRD.Name] = true
 		factory.NextMRTS[newMRD.Name] = time.Time{}
 
+		// If this is a periodic report, put it in the NextMRTS map so it'll get updated on the next report period
 		if newMRD.Type == metric.Periodic && mrd.Period != newMRD.Period {
-			// If this is a periodic report, put it in the NextMRTS map so it'll get updated on the next report period
 			factory.NextMRTS[newMRD.Name] = factory.MetricTSHWM.Add(newMRD.Period.Duration())
 		}
 
 		return nil
 	})
 
-	return err, finalMRD
+	return finalMRD, err
 }
 
 func (factory *telemetryManager) addMRD(mrdEvData MetricReportDefinitionData) (err error) {

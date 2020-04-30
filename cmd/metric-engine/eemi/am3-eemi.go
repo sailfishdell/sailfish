@@ -24,7 +24,7 @@ type busComponents interface {
 	GetWaiter() *eventwaiter.EventWaiter
 }
 
-func Startup(logger log.Logger, cfg *viper.Viper, am3Svc am3.Service, d busComponents) error {
+func Startup(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d busComponents) error {
 	// Important: don't leak 'cfg' outside the scope of this function!
 	MessageRegistry, err := NewMessageRegistry(cfg.GetString("eemi.msgregpath"))
 	if err != nil {
