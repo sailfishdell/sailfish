@@ -1,0 +1,33 @@
+{
+	"@odata.type": "#MetricReportDefinition.v1_2_0.MetricReportDefinition",
+	"@odata.context": "/redfish/v1/$metadata#MetricReportDefinition.MetricReportDefinition",
+	"@odata.id": "/redfish/v1/TelemetryService/MetricReportDefinitions/SerialLog",
+	"Id": "SerialLog",
+	"Name": "SerialLog Report",
+	"Description": "SerialLog Report (Server serial logs).",
+	"AppendLimit": 24000,
+	"MetricReportDefinitionEnabled": true,
+	"MetricReportDefinitionType": "Periodic",
+	"MetricReportDefinitionType@Redfish.AllowableValues": [
+		"Periodic"
+	],
+	"MetricReportHeartbeatInterval": "PT0H0M0S",
+	"SuppressRepeatedMetricValue": true,
+	"ReportTimespan": "PT4H0M0S",
+	"ReportUpdates": "AppendWrapsWhenFull",
+	"ReportUpdates@Redfish.AllowableValues": [
+		"Overwrite"
+	],
+	"ReportActions": [],
+	"ReportActions@odata.count": 0,
+	"ReportActions@Redfish.AllowableValues": [
+		"LogToMetricReportsCollection",
+		"RedfishEvent"
+	],
+	"Schedule": {
+		"RecurrenceInterval": "PT0H0M40S"
+	},
+	"MetricReport": null,
+	"Metrics": [],
+	"Metrics@odata.count": 0
+}
