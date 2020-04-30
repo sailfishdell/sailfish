@@ -65,7 +65,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 
 	// the package for this is going to change, but this is what makes the various mappers and view functions available
 	instantiateSvc := testaggregate.New(logger, cfgMgr, cfgMgrMu, d, am3Svc)
-	evtSvc := eventservice.New(ctx, cfgMgr, cfgMgrMu, d, instantiateSvc, actionSvc, uploadSvc)
+	evtSvc := eventservice.New(ctx, logger, cfgMgr, cfgMgrMu, d, instantiateSvc, actionSvc, uploadSvc)
 
 	testaggregate.RegisterWithURI(instantiateSvc)
 	testaggregate.RegisterPublishEvents(instantiateSvc, evtSvc)
@@ -182,7 +182,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	//*********************************************************************
 	// /redfish/v1/EventService
 	//*********************************************************************
-	evtSvc.StartEventService(ctx, logger, instantiateSvc, map[string]interface{}{})
+	evtSvc.StartEventService(ctx, instantiateSvc, map[string]interface{}{})
 
 	//*********************************************************************
 	// /redfish/v1/Registries

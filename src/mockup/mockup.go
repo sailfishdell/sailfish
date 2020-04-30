@@ -37,7 +37,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	am3Svc, _ := am3.StartService(ctx, logger, "am3 base service", d)
 	instantiateSvc := testaggregate.New(logger, cfgMgr, cfgMgrMu, d, am3Svc)
 	uploadSvc := uploadhandler.StartService(ctx, logger, d)
-	evtSvc := eventservice.New(ctx, cfgMgr, cfgMgrMu, d, instantiateSvc, actionSvc, uploadSvc)
+	evtSvc := eventservice.New(ctx, logger, cfgMgr, cfgMgrMu, d, instantiateSvc, actionSvc, uploadSvc)
 	eventservice.RegisterAggregate(instantiateSvc)
 	testaggregate.RegisterWithURI(instantiateSvc)
 	testaggregate.RegisterPublishEvents(instantiateSvc, evtSvc)
@@ -102,5 +102,5 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	//*********************************************************************
 	// /redfish/v1/EventService
 	//*********************************************************************
-	evtSvc.StartEventService(ctx, logger, instantiateSvc, map[string]interface{}{})
+	evtSvc.StartEventService(ctx, instantiateSvc, map[string]interface{}{})
 }

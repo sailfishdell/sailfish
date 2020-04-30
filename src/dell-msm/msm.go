@@ -46,13 +46,13 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 
 	eventservice.RegisterAggregate(instantiateSvc)
 
-	evtSvc := eventservice.New(ctx, cfgMgr, cfgMgrMu, d, instantiateSvc, actionSvc, uploadSvc)
+	evtSvc := eventservice.New(ctx, logger, cfgMgr, cfgMgrMu, d, instantiateSvc, actionSvc, uploadSvc)
 	testaggregate.RegisterPublishEvents(instantiateSvc, evtSvc)
 
 	//*********************************************************************
 	// /redfish/v1/EventService
 	//*********************************************************************
-	evtSvc.StartEventService(ctx, logger, instantiateSvc, map[string]interface{}{})
+	evtSvc.StartEventService(ctx, instantiateSvc, map[string]interface{}{})
 
 	// VIPER Config:
 	// pull the config from the YAML file to populate some static config options
