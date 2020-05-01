@@ -70,6 +70,10 @@ while [[ $moreopts = 1 && $# -gt 0 ]]; do
       ARGS="$ARGS --new-from-rev=HEAD~"
       shift
       ;;
+    15gtopic)
+      ARGS="$ARGS --new-from-rev=origin/rel/15g/master"
+      shift
+      ;;
     *)
       moreopts=0
       ;;
