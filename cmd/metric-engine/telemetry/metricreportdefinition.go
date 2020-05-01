@@ -932,6 +932,7 @@ type RawMetricInstance struct {
 	Dirty             bool              `db:"Dirty"`
 	MIRequiresExpand  bool              `db:"MIRequiresExpand"`
 	HasAssocMM        bool              `db:"HasAssocMM"`
+	MISourceTraceInfo string            `db:"MISourceTraceInfo"`
 }
 
 // MetricMeta is a fusion structure: Meta + Instance + MetricValueEvent

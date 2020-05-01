@@ -74,17 +74,18 @@ func (m *SQLTimeInt) Scan(src interface{}) error {
 // MetricValueEventData is the data structure to hold everything needed to represent a metric value measurement on the event bus
 // this legitimately should be called a "Metric Value Event", so disable golint stutter wraning
 type MetricValueEventData struct { //nolint: golint
-	Timestamp        SQLTimeInt    `db:"Timestamp"`
-	Name             string        `db:"Name"`
-	Value            string        `db:"Value"`
-	Property         string        `db:"Property"`
-	Context          string        `db:"Context"`
-	FQDD             string        `db:"FQDD"`
-	FriendlyFQDD     string        `db:"FriendlyFQDD"`
-	Source           string        `db:"Source"`
-	MVRequiresExpand bool          `db:"MVRequiresExpand"`
-	MVSensorInterval time.Duration `db:"MVSensorInterval"`
-	MVSensorSlack    time.Duration `db:"MVSensorSlack"`
+	Timestamp         SQLTimeInt    `db:"Timestamp"`
+	Name              string        `db:"Name"`
+	Value             string        `db:"Value"`
+	Property          string        `db:"Property"`
+	Context           string        `db:"Context"`
+	FQDD              string        `db:"FQDD"`
+	FriendlyFQDD      string        `db:"FriendlyFQDD"`
+	Source            string        `db:"Source"`
+	MVSourceTraceInfo string        `db:"MVSourceTraceInfo"`
+	MVRequiresExpand  bool          `db:"MVRequiresExpand"`
+	MVSensorInterval  time.Duration `db:"MVSensorInterval"`
+	MVSensorSlack     time.Duration `db:"MVSensorSlack"`
 }
 
 // FQDDMappingData is the event data structure to transmit fqdd mappings on the event bus
