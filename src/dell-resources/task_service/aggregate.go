@@ -106,7 +106,8 @@ func InitTask(logger log.Logger, instantiateSvc *testaggregate.Service, am3Svc *
 	}
 
 	go func() {
-		taskViews := map[string]*view.View{}
+		createdTasks := map[string]bool{}
+
 		var attrModel *model.Model // model from syschas1/attr
 		var ad a.AttributeData     // for mapping the actual attribute date
 		for {
@@ -168,7 +169,7 @@ func InitTask(logger log.Logger, instantiateSvc *testaggregate.Service, am3Svc *
 								continue inner
 							}
 							// early out for tasks we already have
-							if _, ok := taskViews[params["task_id"].(string)]; ok {
+							if _, ok := createdTasks[params["task_id"].(string)]; ok {
 								continue inner
 							}
 						}
@@ -196,26 +197,51 @@ func InitTask(logger log.Logger, instantiateSvc *testaggregate.Service, am3Svc *
 						}
 						params["task_msg_1_args"] = msg_args
 
-						if _, ok := taskViews[params["task_id"].(string)]; !ok {
-							// Add it to the pile to instantiate, then do it outside the lock
-							instantiateList = append(instantiateList, params)
-						}
+						// Mark that we have the task now so that it will meet early out
+						// condition above and not attempt another instantiate.
+						// Ideally, this would would be in instantiateTasksInList() after
+						// confirming that the task is successfully instantiated.
+						createdTasks[params["task_id"].(string)] = true
+
+						// Add it to the pile to instantiate, then do it outside the lock
+						instantiateList = append(instantiateList, params)
 					}
 				}
 			})
 
-			for _, params := range instantiateList {
-				_, vw, _ := instantiateSvc.Instantiate("task", params)
-				taskViews[params["task_id"].(string)] = vw
-				ch.HandleCommand(ctx,
-					&domain.UpdateRedfishResourceProperties2{
-						ID: vw.GetUUID(),
-						Properties: map[string]interface{}{
-							"TaskState": params["STATE"],
-						}})
-			}
+			// Start a seperate GO routine to perform all the instantiations needed.
+			// An issue was discovered where instantiate would take a while and if
+			// a new task was created and changed too quickly, it would be completely
+			// missed. This way, processing new tasks is not blocked.
+			go instantiateTasksInList(logger, instantiateSvc, ctx, ch, instantiateList)
 		}
 	}()
+}
+
+//////////////////////////////////////////////////////////////////////
+// Create a URI for each task defined in instantiateList.
+// The instantiateList contains a map per URI with the intended fields.
+//////////////////////////////////////////////////////////////////////
+func instantiateTasksInList(logger log.Logger, instantiateSvc *testaggregate.Service, ctx context.Context, ch eh.CommandHandler, instantiateList []map[string]interface{}) {
+	for _, params := range instantiateList {
+		// Instantiate each task using the values in the given map (params).
+		// NOTE: params is EXPECTED to have "task_id" and "STATE" keys if it made it here.
+		_, vw, err := instantiateSvc.Instantiate("task", params)
+
+		if err != nil {
+			logger.Crit(params["task_id"].(string) + " task_service failed to instantiate: " + err.Error())
+		} else {
+			logger.Debug(params["task_id"].(string) + " task_service instantiated")
+
+			// Add newly created URI to be handled
+			ch.HandleCommand(ctx,
+				&domain.UpdateRedfishResourceProperties2{
+					ID:         vw.GetUUID(),
+					Properties: map[string]interface{}{"TaskState": params["STATE"]},
+				},
+			)
+		}
+	}
 }
 
 func RegisterAggregate(s *testaggregate.Service) {
