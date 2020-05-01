@@ -6,7 +6,7 @@
   "MetricReportDefinitionType": "OnRequest",
   "ReportTimespan": "PT60S",
   "ReportUpdates": "AppendWrapsWhenFull",
-  "SuppressRepeatedMetricValue": true,
+  "SuppressRepeatedMetricValue": false,
   "MetricReportHeartbeatInterval": "PT20S",
   "ReportActions": ["LogToMetricReportsCollection"],
   "Metrics": [
