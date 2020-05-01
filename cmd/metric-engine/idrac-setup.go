@@ -17,12 +17,6 @@ import (
 	"github.com/superchalupa/sailfish/cmd/metric-engine/watchdog"
 )
 
-const (
-	mdDir   = "md/"
-	mrdDir  = "mrd/"
-	trigDir = "trigger/"
-)
-
 // nolint: gochecknoinits
 // have to have init() function to runtime register the compile-time optional components, better suggestions welcome
 func init() {
