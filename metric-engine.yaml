@@ -383,10 +383,9 @@ UDB-Metric-Import:
          '/redfish/v1/FIXME/' || FQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
-        600000000000 as 'SensorInterval',
+        3600000000000 as 'SensorInterval',
         60000000000 as 'SensorSlack',
         true as 'RequiresExpand',
-        -- Sailaja - 2020-03-11 what about the expand for this? And waitinterval as reportinterval is big 3600 sec.
 
         smartData_DOT_percentageUsed as 'Metric-PercentageUsed',
         smartData_DOT_criticalWarning as 'Metric-CriticalWarning',
@@ -434,7 +433,7 @@ UDB-Metric-Import:
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
 
-        600000000000 as 'SensorInterval',
+        3600000000000 as 'SensorInterval',
         60000000000 as 'SensorSlack',
         true as 'RequiresExpand',
 
