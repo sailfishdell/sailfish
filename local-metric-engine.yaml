@@ -13,7 +13,7 @@ udb:
 
 pprof: [ "unix:data/http.socket" ]
 SSE: [ "unix:data/http.socket", "http::8080" ]
-Redfish: [ "unix:data/http.socket" ]
+Redfish: [ "unix:data/http.socket", "http::8080" ]
 pipe: [ "data/metric-engine.pipe" ]
 
 triggers:
