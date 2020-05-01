@@ -344,8 +344,8 @@ UDB-Metric-Import:
     DBChange:
       SHM.db:
         TblsAggregationMetrics:
-    ScanInterval: 0
-    WaitInterval: 5
+    ScanInterval: 60
+    WaitInterval: 60
     Query: |
       SELECT
         -- only artificial available for now
@@ -383,7 +383,9 @@ UDB-Metric-Import:
          '/redfish/v1/FIXME/' || FQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
-        -- Sailaja - 2020-03-11 what about the expand for this? And waitinterval as reportinterval is big 3600 sec.
+        3600000000000 as 'SensorInterval',
+        60000000000 as 'SensorSlack',
+        true as 'RequiresExpand',
 
         smartData_DOT_percentageUsed as 'Metric-PercentageUsed',
         smartData_DOT_criticalWarning as 'Metric-CriticalWarning',
@@ -431,6 +433,10 @@ UDB-Metric-Import:
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
 
+        3600000000000 as 'SensorInterval',
+        60000000000 as 'SensorSlack',
+        true as 'RequiresExpand',
+
         smartData_DOT_volatileMemoryBackupSourceFailures as 'Metric-VolatileMemoryBackupSourceFailures',
         smartData_DOT_usedReservedBlockCount as 'Metric-UsedReservedBlockCount',
         smartData_DOT_unusedReservedBlockCount as 'Metric-UnusedReservedBlockCount',
@@ -469,6 +475,10 @@ UDB-Metric-Import:
          '/redfish/v1/FIXME/' || FQDD as Property,
         FQDD as FQDD,
 
+        600000000000 as 'SensorInterval',
+        60000000000 as 'SensorSlack',
+        true as 'RequiresExpand',
+
         SBERetiredPages as 'Metric-SBERetiredPages',
         SBECounterGRTex as 'Metric-SBECounterGRTex',
         SBECounterGRRF as 'Metric-SBECounterGRRF',
@@ -502,6 +512,10 @@ UDB-Metric-Import:
         FQDD as Context,
          '/redfish/v1/FIXME/' || FQDD as Property,
         FQDD as FQDD,
+
+        5000000000 as 'SensorInterval',
+        1000000000 as 'SensorSlack',
+        true as 'RequiresExpand',
 
         BoardPowerSupplyStatus as 'Metric-BoardPowerSupplyStatus',
         BoardTemp              as 'Metric-BoardTemperature',
@@ -757,6 +771,9 @@ UDB-Metric-Import:
         '/redfish/v1/FIXME/' || FQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
+        5000000000 as 'SensorInterval',
+        1000000000 as 'SensorSlack',
+        true as 'RequiresExpand',
 
         currentTemp as 'Metric-TemperatureReading'
       FROM TblHIISensorInfo_obj
@@ -777,6 +794,10 @@ UDB-Metric-Import:
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
 
+        5000000000 as 'SensorInterval',
+        1000000000 as 'SensorSlack',
+        true as 'RequiresExpand',
+
         VariableSpeed as 'Metric-RPMReading'
       from TblFanExtObj
       WHERE Timestamp > :HWM
@@ -795,6 +816,9 @@ UDB-Metric-Import:
 
         Key as FQDD,
         ProbeLocation as FriendlyFQDD,
+        5000000000 as 'MVSensorInterval',
+        1000000000 as 'MVSensorSlack',
+        true as 'MVRequiresExpand',
 
         -- property not quite right, as PS sensors are an exception
         printf('/redfish/v1/Dell/Systems/System.Embedded.1/DellNumericSensor/%s', replace(replace(Key, '|', '_0x7c_') , '#', '_0x23_')) as Property,
@@ -893,6 +917,9 @@ UDB-Metric-Import:
         ElementName as Context,
         DeviceID as FQDD,
         ElementName as FriendlyFQDD
+        5000000000 as 'SensorInterval',
+        1000000000 as 'SensorSlack',
+        true as 'RequiresExpand'
       FROM CIMVIEW_DCIM_NumericSensor
       WHERE Timestamp > :HWM
 
@@ -939,7 +966,10 @@ UDB-Metric-Import:
         printf('/redfish/v1/Dell/Systems/System.Embedded.1/DellPSNumericSensor/%s', replace(replace(DeviceID, '|', '_0x7c_') , '#', '_0x23_')) as Property,
         ElementName as Context,
         DeviceID as FQDD,
-        ElementName as FriendlyFQDD
+        ElementName as FriendlyFQDD,
+        5000000000 as 'SensorInterval',
+        1000000000 as 'SensorSlack',
+        true as 'RequiresExpand'
       FROM CIMVIEW_DCIM_PSNumericSensor
       WHERE Timestamp > :HWM
 
