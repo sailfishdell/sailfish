@@ -103,6 +103,7 @@ UDB-Metric-Import:
         strftime('%s', LastDayMinPowerTime, 'unixepoch', 'utc') as 'Metric-LastDayMinPowerTime',
         LastDayMinPower as 'Metric-LastDayMinPower',
         strftime('%s', LastDayMaxPowerTime, 'unixepoch', 'utc') as 'Metric-LastDayMaxPowerTime',
+        LastDayMaxPower as 'Metric-LastDayMaxPower',
         LastDayAvgPower as 'Metric-LastDayAvgPower',
 
         strftime('%s', LastHourMinPowerTime, 'unixepoch', 'utc') as 'Metric-LastHourMinPowerTime',
