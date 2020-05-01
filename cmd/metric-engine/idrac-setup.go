@@ -34,7 +34,7 @@ func init() {
 
 func setDefaults(cfgMgr *viper.Viper) {
 	cfgMgr.SetDefault("main.databasepath",
-		"file:/run/telemetryservice/telemetry_timeseries_database.db?_foreign_keys=on&cache=shared&mode=rwc&_busy_timeout=1000")
+		"file:/run/telemetryservice/telemetry_timeseries_database.db?_foreign_keys=on&cache=shared&mode=rwc&_busy_timeout=1000&_journal_mode=WAL")
 	cfgMgr.SetDefault("main.startup", "startup-events")
 	cfgMgr.SetDefault("main.mddirectory", "/usr/share/telemetryservice/md/")
 }
