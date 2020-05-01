@@ -96,7 +96,13 @@ func (meta *importByColumn) wrappedImportByColumn(totalEvents *int, totalRows *i
 			metricName := k[len("Metric-"):]
 			eventToSend := baseEvent
 			eventToSend.Property = property + "#" + metricName
-			eventToSend.Value = fmt.Sprintf("%v", v)
+
+			switch v.(type) {
+			case []uint8:
+				eventToSend.Value = fmt.Sprintf("%s", v)
+			default: //int64 and float64
+				eventToSend.Value = fmt.Sprintf("%v", v)
+			}
 			eventToSend.Name = metricName
 
 			if mts, ok := mm["Timestamp-"+metricName].(int64); ok {
