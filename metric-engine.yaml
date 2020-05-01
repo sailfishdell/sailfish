@@ -1554,7 +1554,7 @@ createdb:
               'MetricId', MI.Name,
               'Timestamp', strftime('%Y-%m-%dT%H:%M:%fZ', MV.Timestamp/1000000000, 'unixepoch'),
               'MetricValue', MV.Value,
-              'OEM', json_object(
+              'Oem', json_object(
                 'Dell', json_object(
                   'ContextID', MI.Context,
                   'Label', MI.Label,
@@ -1741,7 +1741,7 @@ createdb:
                     WHEN 0 THEN NULL
                     ELSE 'PT' || (MM.CollectionDuration/(3600 * 1000000000)) || 'H' || ((MM.CollectionDuration/(60 * 1000000000))%60) || 'M' || ((MM.CollectionDuration/1000000000)%60) || 'S'
                     END,
-                  'OEM', json_object(
+                  'Oem', json_object(
                     'Dell', json_object(
                       'FQDD',
                         CASE MM.FQDDPattern
