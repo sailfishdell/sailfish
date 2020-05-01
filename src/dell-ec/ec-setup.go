@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"time"
 
 	eh "github.com/looplab/eventhorizon"
 	"github.com/spf13/viper"
@@ -43,50 +42,44 @@ func setup(logger log.Logger, d *domain.DomainObjects) {
 			logger.Warn("SKIPPING: no startup events found")
 			return
 		}
+		// all these are panic as this is on startup and should be noticed and fixed before release. can't affect a customer environment
 		events, ok := startup.([]interface{})
 		if !ok {
-			logger.Crit("SKIPPING: Startup Events skipped - malformed.", "Section", section, "malformed-value", startup)
-			return
+			panic("malformed startup event section: " + section)
 		}
 		for i, v := range events {
 			settings, ok := v.(map[interface{}]interface{})
 			if !ok {
 				logger.Crit("SKIPPING: malformed event. Expected map", "Section", section, "index", i, "malformed-value", v, "TYPE", fmt.Sprintf("%T", v))
-				continue
+				panic("malformed event")
 			}
 
 			name, ok := settings["name"].(string)
 			if !ok {
 				logger.Crit("SKIPPING: Config file section missing event name- 'name' key missing.", "Section", section, "index", i, "malformed-value", v)
-				continue
+				panic("malformed event")
 			}
 			eventType := eh.EventType(name + "Event")
 
 			dataString, ok := settings["data"].(string)
 			if !ok {
 				logger.Crit("SKIPPING: Config file section missing event name- 'data' key missing.", "Section", section, "index", i, "malformed-value", v)
-				continue
+				panic("malformed event")
 			}
 
 			eventData, err := eh.CreateEventData(eventType)
 			if err != nil {
 				logger.Crit("SKIPPING: couldnt instantiate event", "Section", section, "index", i, "malformed-value", v, "event", name, "err", err)
-				continue
+				panic("malformed event")
 			}
 
 			err = json.Unmarshal([]byte(dataString), &eventData)
 			if err != nil {
-				// well if it doesn't unmarshall, try to just send it as a string (Used for sending DatabaseMaintenance events.
-				eventData = dataString
+				panic("MUSTFIX unmarshal error: " + err.Error())
 			}
 
-			//fmt.Printf("\tPublishing Startup Event (%s)\n", name)
-			evt := event.NewSyncEvent(eventType, eventData, time.Now())
-			evt.Add(1)
-			d.EventBus.PublishEvent(context.Background(), evt)
-			evt.Wait()
+			event.PublishAndWait(context.Background(), d.EventBus, eventType, eventData)
 		}
-		fmt.Println("Published all Startup Events")
 	}
 
 	// After we have our event loops set up,
