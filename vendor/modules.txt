@@ -17,6 +17,8 @@ github.com/go-stomp/stomp/frame
 github.com/golang/protobuf/proto
 # github.com/gorilla/context v1.1.1
 github.com/gorilla/context
+# github.com/gorilla/handlers v1.4.2
+github.com/gorilla/handlers
 # github.com/gorilla/mux v1.6.2
 github.com/gorilla/mux
 # github.com/hashicorp/hcl v1.0.0
