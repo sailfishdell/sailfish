@@ -19,6 +19,7 @@ import (
 	"github.com/superchalupa/sailfish/cmd/metric-engine/metric"
 	"github.com/superchalupa/sailfish/cmd/metric-engine/telemetry"
 	log "github.com/superchalupa/sailfish/src/log"
+	"github.com/superchalupa/sailfish/src/looplab/event"
 	"github.com/superchalupa/sailfish/src/looplab/eventwaiter"
 	"github.com/superchalupa/sailfish/src/ocp/am3"
 )
@@ -102,8 +103,8 @@ func Startup(logger log.Logger, am3Svc *am3.Service, d busComponents) error {
 
 func MakeHandlerSubmitTestMR(logger log.Logger, msgreg eemi.MessageRegistry, bus eh.EventBus) func(eh.Event) {
 	// TODO: this function will need to open pipes and write out the MR
-	return func(event eh.Event) {
-		testMR, ok := event.Data().(*SubmitTestMetricReportCommandData)
+	return func(evt eh.Event) {
+		testMR, ok := evt.Data().(*SubmitTestMetricReportCommandData)
 		if !ok {
 			logger.Crit("handler got event of incorrect format")
 			return
@@ -119,10 +120,7 @@ func MakeHandlerSubmitTestMR(logger log.Logger, msgreg eemi.MessageRegistry, bus
 		}
 
 		// Should add the populated metric report definition event as a response?
-		err = bus.PublishEvent(context.Background(), respEvent)
-		if err != nil {
-			logger.Crit("Error publishing", "err", err)
-		}
+		event.PublishEventAndWait(context.Background(), bus, respEvent)
 	}
 }
 
