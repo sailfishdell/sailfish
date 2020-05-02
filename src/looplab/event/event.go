@@ -76,3 +76,12 @@ func PublishAndWaitErr(ctx context.Context, bus eh.EventBus, t eh.EventType, d e
 func PublishAndWait(ctx context.Context, bus eh.EventBus, t eh.EventType, d eh.EventData) {
 	_ = PublishAndWaitErr(ctx, bus, t, d) // throw away err
 }
+
+func PublishErr(ctx context.Context, bus eh.EventBus, t eh.EventType, d eh.EventData) error {
+	evt := NewEvent(t, d, time.Now())
+	return PublishEventAndWaitErr(ctx, bus, evt) // type assert to sync event will fail, this is ok and wont actually wait
+}
+
+func Publish(ctx context.Context, bus eh.EventBus, t eh.EventType, d eh.EventData) {
+	_ = PublishErr(ctx, bus, t, d) // throw away err
+}
