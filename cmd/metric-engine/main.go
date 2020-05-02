@@ -97,10 +97,17 @@ func main() {
 		cancel()
 	}()
 
+	cfgMgr.SetDefault("main.queuelen", 40)
+	cfgMgr.SetDefault("main.queuewarnpct", 0)
 	d := &busComponents{
 		EventBus:       eventbus.NewEventBus(),
 		EventPublisher: eventpublisher.NewEventPublisher(),
-		EventWaiter:    eventwaiter.NewEventWaiter(eventwaiter.SetName("Main"), eventwaiter.NoAutoRun),
+		EventWaiter: eventwaiter.NewEventWaiter(
+			eventwaiter.WithLogger(logger),
+			eventwaiter.SetName("Main"),
+			eventwaiter.NoAutoRun,
+			eventwaiter.QueueLen(cfgMgr.GetInt("main.queuelen")),
+			eventwaiter.WarnPct(cfgMgr.GetInt("main.queuewarnpct"))),
 	}
 
 	d.EventBus.AddHandler(eh.MatchAny(), d.EventPublisher)

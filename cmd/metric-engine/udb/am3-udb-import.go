@@ -44,6 +44,9 @@ const (
 	SyncValueTrue              = "value=Enabled"
 	SyncValueFalse             = "value=Disabled"
 	SyncValue                  = "value=%v"
+
+	// error strings
+	addHandlerFail = "Failed to attach event handler: %w"
 )
 
 type busComponents interface {
@@ -119,34 +122,34 @@ func Startup(logger log.Logger, cfg *viper.Viper, am3Svc eventHandlingService, d
 	}
 
 	bus := d.GetBus()
-	err = am3Svc.AddEventHandler("Import UDB Metric Values", telemetry.PublishClock, MakeHandlerUDBPeriodicImport(logger, importMgr, bus))
-	if err != nil {
-		return nil, xerrors.Errorf("Failed to attach event handler: %w", err)
-	}
-	err = am3Svc.AddEventHandler("UDB Change Notification", udbChangeEvent, MakeHandlerUDBChangeNotify(logger, importMgr, bus))
-	if err != nil {
-		return nil, xerrors.Errorf("Failed to attach event handler: %w", err)
-	}
-
 	// handle sync of legacy AR attributes for MRD enable/disable, etc.
 	configSync, err := newConfigSync(logger, database, d)
 	if err != nil {
-		return nil, xerrors.Errorf("Failed to attach event handler: %w", err)
+		return nil, xerrors.Errorf(addHandlerFail, err)
 	}
 	err = am3Svc.AddEventHandler(
 		"UDB Cfg change Notification",
 		udbChangeEvent,
 		MakeHandlerLegacyAttributeSync(log.With(logger, "module", "LegacyARSync"), importMgr, bus, configSync))
 	if err != nil {
-		return nil, xerrors.Errorf("Failed to attach event handler: %w", err)
+		return nil, xerrors.Errorf(addHandlerFail, err)
 	}
 
 	configSync.kickstartLegacyARConfigSync(logger, d)
 
+	err = am3Svc.AddEventHandler("Import UDB Metric Values", telemetry.PublishClock, MakeHandlerUDBPeriodicImport(logger, importMgr, bus))
+	if err != nil {
+		return nil, xerrors.Errorf(addHandlerFail, err)
+	}
+	err = am3Svc.AddEventHandler("UDB Change Notification", udbChangeEvent, MakeHandlerUDBChangeNotify(logger, importMgr, bus))
+	if err != nil {
+		return nil, xerrors.Errorf(addHandlerFail, err)
+	}
+
 	err = am3Svc.AddEventHandler("Update Metric Report Definition to Sync ConfigDB", telemetry.UpdateMRDResponseEvent, MakeHandlerUpdateMRDSyncConfigDB(logger, importMgr, bus))
 
 	if err != nil {
-		return nil, xerrors.Errorf("Failed to attach response event handler: %w", err)
+		return nil, xerrors.Errorf(addHandlerFail, err)
 	}
 
 	go handleUDBNotifyPipe(logger, cfg.GetString("udb.udbnotifypipe"), d)
@@ -292,13 +295,13 @@ func (cs ConfigSync) kickstartLegacyARConfigSync(logger log.Logger, d busCompone
 			notify := &changeNotify{Database: "DMLiveObjectDatabase.db", Table: s.table, Rowid: rowid, Operation: 0}
 			events = append(events, notify)
 			if len(events) > maxPackedEvents {
-				publishAndWait(logger, d.GetBus(), udbChangeEvent, events)
+				publishHelper(logger, d.GetBus(), udbChangeEvent, events, true)
 				events = make([]eh.EventData, 0, maxPackedEvents)
 			}
 		}
 	}
 	if len(events) > 0 {
-		publishAndWait(logger, d.GetBus(), udbChangeEvent, events)
+		publishHelper(logger, d.GetBus(), udbChangeEvent, events, true)
 	}
 }
 
@@ -415,7 +418,7 @@ func MakeHandlerLegacyAttributeSync(logger log.Logger, importMgr *importManager,
 			return
 		}
 		logger.Debug("CRIT: about to send", "report", updateEvent.ReportDefinitionName, "PATCH", string(updateEvent.Patch))
-		publishAndWait(logger, bus, telemetry.UpdateMRDCommandEvent, updateEvent)
+		publishHelper(logger, bus, telemetry.UpdateMRDCommandEvent, updateEvent, false)
 	}
 }
 
@@ -455,14 +458,16 @@ type changeNotify struct {
 // This is the number of '|' separated fields in a correct record
 const numChangeFields = 4
 
-func publishAndWait(logger log.Logger, bus eh.EventBus, et eh.EventType, data eh.EventData) {
-	evt := event.NewSyncEvent(et, data, time.Now())
-	evt.Add(1)
+// ONLY WAIT IN FUNCTIONS THAT INGEST DATA FROM EXTERNAL SOURCES, HIGH RISK OF DEADLOCK IF YOU WAIT() FROM AN AM3 Handler Function
+func publishHelper(logger log.Logger, bus eh.EventBus, et eh.EventType, data eh.EventData, wait bool) {
+	evt := event.PrepSyncEvent(et, data, time.Now())
 	err := bus.PublishEvent(context.Background(), evt)
 	if err != nil {
 		logger.Crit("Error publishing event. This should never happen!", "err", err)
 	}
-	evt.Wait()
+	if wait {
+		evt.Wait()
+	}
 }
 
 func splitUDBNotify(data []byte, atEOF bool) (advance int, token []byte, err error) {
