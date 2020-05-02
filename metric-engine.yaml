@@ -1893,23 +1893,23 @@ createdb:
       -- This is the table that creates a uniform table name to gather *any* metric report, regardless of type
       DROP VIEW IF EXISTS JSON;
       CREATE VIEW JSON as
+        select root, [@odata.id] from MetricReportCollection_JSON
+          UNION ALL
+        select root, [@odata.id] from MetricReport_JSON
+          UNION ALL
         select root, [@odata.id] from MetricReportDefinitionCollection_JSON
           UNION ALL
         select root, [@odata.id] from MetricReportDefinition_JSON
-          UNION ALL
-        select root, [@odata.id] from MetricReportCollection_JSON
           UNION ALL
         select root, [@odata.id] from MetricDefinitionCollection_JSON
           UNION ALL
         select root, [@odata.id] from MetricDefinition_JSON
           UNION ALL
-        select root, [@odata.id] from MetricReport_JSON
-          UNION ALL
         select root, [@odata.id] from TelemetryService_JSON
-             UNION ALL
+          UNION ALL
+        select root, [@odata.id] from TriggerCollection_JSON
+          UNION ALL
         select root, [@odata.id] from Trigger_JSON
-             UNION ALL
-         select root, [@odata.id] from TriggerCollection_JSON
 
 # Backwards compat stuff to get the fcgi_rfsql to work. Drop the tables in a separate statement because it can error out (and be ignored)
   - |
@@ -1988,7 +1988,7 @@ createdb:
       CREATE TABLE IF NOT EXISTS TriggerToMRD
       (
         MetricReportDefinitionID      INTEGER not null,
-        TriggerID			  INTEGER not null,
+        TriggerID        INTEGER not null,
 
         -- indexes and constraints
         primary key (TriggerID, MetricReportDefinitionID)
@@ -2003,8 +2003,8 @@ createdb:
   - |
       CREATE TABLE IF NOT EXISTS EventTriggers
       (
-        ID          		  INTEGER NOT NULL PRIMARY KEY,
-        EemiID      		  TEXT not null,
+        ID                INTEGER NOT NULL PRIMARY KEY,
+        EemiID            TEXT not null,
         TriggerID             INTEGER not null,
 
         -- indexes and constraints
@@ -2096,7 +2096,7 @@ createdb:
        Description     TEXT NOT NULL,
        MetricType      TEXT NOT NULL,
        MetricDataType  TEXT NOT NULL,
-       Units 	         TEXT,
+       Units           TEXT,
        Accuracy        REAL,
        SensingInterval TEXT,
        DiscreteValues  TEXT
