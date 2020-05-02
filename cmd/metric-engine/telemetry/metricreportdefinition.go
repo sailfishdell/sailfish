@@ -422,6 +422,14 @@ func (factory *telemetryManager) updateMRD(reportDef string, updates json.RawMes
 			if err != nil {
 				return xerrors.Errorf("error populating MRDToTrigger for MRD(%s): %s --ERR--> %w", reportDef, updates, err)
 			}
+		} else {
+			// Update newMRD.TriggerList with existing
+			var trigListStr sql.NullString
+			err = factory.getSQLXTx(tx, "trglist_by_mrdid").Get(&trigListStr, mrd.ID)
+			if err != nil {
+				return xerrors.Errorf("error getting TriggerList for MRD(%s): %s --ERR--> %w", reportDef, updates, err)
+			}
+			newMRD.TriggerList = strings.Split(trigListStr.String, " ")
 		}
 
 		finalMRD = newMRD

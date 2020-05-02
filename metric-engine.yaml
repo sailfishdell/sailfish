@@ -1280,6 +1280,12 @@ internal:
         Hidden
       FROM MetricReportDefinition where Name=?
 
+    trglist_by_mrdid: |
+      SELECT
+        group_concat(RedfishID, " ")
+        FROM Trigger, TriggerToMRD
+        WHERE Trigger.ID = TriggerID AND MetricReportDefinitionID = ?
+
     find_trg_by_name: |
       SELECT
         ID,

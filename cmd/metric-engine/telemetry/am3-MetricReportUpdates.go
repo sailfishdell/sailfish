@@ -30,6 +30,7 @@ const (
 const (
 	// cant change
 	mrdPath = "/redfish/v1/TelemetryService/MetricReportDefinitions/"
+	trgPath = "/redfish/v1/TelemetryService/Triggers/"
 
 	// often used strings
 	optimize      = "optimize"
@@ -440,7 +441,7 @@ func MakeHandlerAddTrigger(logger log.Logger, telemetryMgr *telemetryManager, bu
 
 		addError := telemetryMgr.addTrigger(trigger.TriggerData)
 		if addError != nil {
-			logger.Crit("Failed to create the Report Definition", "Name", trigger.Name, "err", addError)
+			logger.Crit("Failed to create the Trigger", "Name", trigger.Name, "err", addError)
 		}
 
 		// Generate a "response" event that carries status back to initiator
@@ -449,11 +450,11 @@ func MakeHandlerAddTrigger(logger log.Logger, telemetryMgr *telemetryManager, bu
 			logger.Crit(respCreateError, "err", err, triggerDef, trigger.Name)
 			return
 		}
-		mrd := mrdPath + trigger.Name
+		trg := trgPath + trigger.Name
 
 		r, ok := respEvent.Data().(urisetter)
 		if ok {
-			r.SetURI(mrd)
+			r.SetURI(trg)
 		}
 
 		// Should add the populated metric report definition event as a response?
