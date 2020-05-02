@@ -59,20 +59,9 @@ type busComponents interface {
 	GetWaiter() *eventwaiter.EventWaiter
 }
 
-// publishHelper will log/eat the error from PublishEvent since we can't do anything useful with it
-// IFF event passed is a SyncEvent, it will synchronously wait for it.
-// BE CAREFUL to not send sync events from AM3 handlers! High likelihood of unpredictable lockups.
-func publishHelper(logger log.Logger, bus eh.EventBus, evt eh.Event) {
-	event.PinSyncEvent(evt)
-	err := bus.PublishEvent(context.Background(), evt)
-	if err != nil {
-		logger.Crit("publish event", "err", err)
-		return
-	}
-	event.WaitSyncEvent(evt)
-}
-
 func backgroundTasks(logger log.Logger, bus eh.EventBus, shutdown chan struct{}) {
+	ctx := context.Background()
+
 	clockTicker := time.NewTicker(clockPeriod)
 	cleanValuesTicker := time.NewTicker(cleanValuesTime)
 	vacuumTicker := time.NewTicker(vacuumTime)
@@ -87,14 +76,14 @@ func backgroundTasks(logger log.Logger, bus eh.EventBus, shutdown chan struct{})
 	for {
 		select {
 		case <-cleanValuesTicker.C:
-			publishHelper(logger, bus, event.NewSyncEvent(DatabaseMaintenance, cleanValues, time.Now()))
+			event.PublishAndWait(ctx, bus, DatabaseMaintenance, cleanValues)
 		case <-vacuumTicker.C:
-			publishHelper(logger, bus, event.NewSyncEvent(DatabaseMaintenance, vacuum, time.Now()))
+			event.PublishAndWait(ctx, bus, DatabaseMaintenance, vacuum)
 		case <-optimizeTicker.C:
-			publishHelper(logger, bus, event.NewSyncEvent(DatabaseMaintenance, optimize, time.Now()))
-			publishHelper(logger, bus, event.NewSyncEvent(DatabaseMaintenance, deleteOrphans, time.Now())) // belt and suspenders
+			event.PublishAndWait(ctx, bus, DatabaseMaintenance, optimize)
+			event.PublishAndWait(ctx, bus, DatabaseMaintenance, deleteOrphans)
 		case <-clockTicker.C:
-			publishHelper(logger, bus, event.NewSyncEvent(PublishClock, nil, time.Now()))
+			event.PublishAndWait(ctx, bus, PublishClock, nil)
 		case <-shutdown:
 			return
 		}
@@ -218,8 +207,8 @@ func MakeHandlerGenericGET(
 	msgreg eemi.MessageRegistry,
 	bus eh.EventBus,
 ) func(eh.Event) {
-	return func(event eh.Event) {
-		getCmd, ok := event.Data().(*GenericGETCommandData)
+	return func(evt eh.Event) {
+		getCmd, ok := evt.Data().(*GenericGETCommandData)
 		if !ok {
 			logger.Crit(typeAssertError)
 			return
@@ -251,7 +240,8 @@ func MakeHandlerGenericGET(
 					logger.Crit("write", "err", err)
 				}
 			}
-			publishHelper(logger, bus, respEvent)
+			// wont actually wait since event is not sync
+			event.PublishEventAndWait(context.Background(), bus, respEvent)
 		}()
 	}
 }
@@ -262,8 +252,8 @@ func MakeHandlerCreateMRD(logger log.Logger,
 	bus eh.EventBus,
 	dbmaint map[string]struct{},
 ) func(eh.Event) {
-	return func(event eh.Event) {
-		reportDef, ok := event.Data().(*AddMRDCommandData)
+	return func(evt eh.Event) {
+		reportDef, ok := evt.Data().(*AddMRDCommandData)
 		if !ok {
 			logger.Crit(typeAssertError)
 			return
@@ -291,7 +281,8 @@ func MakeHandlerCreateMRD(logger log.Logger,
 		}
 
 		// Should add the populated metric report definition event as a response?
-		publishHelper(logger, bus, respEvent)
+		// wont actually wait since event is not sync
+		event.PublishEventAndWait(context.Background(), bus, respEvent)
 	}
 }
 
@@ -302,8 +293,8 @@ func MakeHandlerUpdateMRD(
 	bus eh.EventBus,
 	dbmaint map[string]struct{},
 ) func(eh.Event) {
-	return func(event eh.Event) {
-		update, ok := event.Data().(*UpdateMRDCommandData)
+	return func(evt eh.Event) {
+		update, ok := evt.Data().(*UpdateMRDCommandData)
 		if !ok {
 			logger.Crit(typeAssertError)
 			return
@@ -338,7 +329,8 @@ func MakeHandlerUpdateMRD(
 		}
 
 		// Should add the populated metric report definition event as a response?
-		publishHelper(logger, bus, respEvent)
+		// wont actually wait since event is not sync
+		event.PublishEventAndWait(context.Background(), bus, respEvent)
 	}
 }
 
@@ -349,8 +341,8 @@ func MakeHandlerDeleteMRD(
 	bus eh.EventBus,
 	dbmaint map[string]struct{},
 ) func(eh.Event) {
-	return func(event eh.Event) {
-		reportDef, ok := event.Data().(*DeleteMRDCommandData)
+	return func(evt eh.Event) {
+		reportDef, ok := evt.Data().(*DeleteMRDCommandData)
 		if !ok {
 			logger.Crit(typeAssertError)
 			return
@@ -376,7 +368,8 @@ func MakeHandlerDeleteMRD(
 			r.SetURI(mrd)
 		}
 
-		publishHelper(logger, bus, respEvent)
+		// wont actually wait since event is not sync
+		event.PublishEventAndWait(context.Background(), bus, respEvent)
 	}
 }
 
@@ -387,8 +380,8 @@ func MakeHandlerCreateMD(
 	msgreg eemi.MessageRegistry,
 	bus eh.EventBus,
 ) func(eh.Event) {
-	return func(event eh.Event) {
-		mdDef, ok := event.Data().(*AddMDCommandData)
+	return func(evt eh.Event) {
+		mdDef, ok := evt.Data().(*AddMDCommandData)
 		if !ok {
 			logger.Crit(typeAssertError)
 			return
@@ -406,7 +399,8 @@ func MakeHandlerCreateMD(
 			return
 		}
 
-		publishHelper(logger, bus, respEvent)
+		// wont actually wait since event is not sync
+		event.PublishEventAndWait(context.Background(), bus, respEvent)
 	}
 }
 
@@ -418,8 +412,8 @@ func MakeHandlerAddTrigger(
 	bus eh.EventBus,
 	dbmaint map[string]struct{},
 ) func(eh.Event) {
-	return func(event eh.Event) {
-		trigger, ok := event.Data().(*AddTriggerCommandData)
+	return func(evt eh.Event) {
+		trigger, ok := evt.Data().(*AddTriggerCommandData)
 		if !ok {
 			logger.Crit(typeAssertError)
 			return
@@ -446,8 +440,8 @@ func MakeHandlerAddTrigger(
 			r.SetURI(trg)
 		}
 
-		// Should add the populated metric report definition event as a response?
-		publishHelper(logger, bus, respEvent)
+		// wont actually wait since event is not sync
+		event.PublishEventAndWait(context.Background(), bus, respEvent)
 	}
 }
 
@@ -458,8 +452,8 @@ func MakeHandlerUpdateTrigger(
 	bus eh.EventBus,
 	dbmaint map[string]struct{},
 ) func(eh.Event) {
-	return func(event eh.Event) {
-		update, ok := event.Data().(*UpdateTriggerCommandData)
+	return func(evt eh.Event) {
+		update, ok := evt.Data().(*UpdateTriggerCommandData)
 		if !ok {
 			logger.Crit(typeAssertError)
 			return
@@ -487,8 +481,8 @@ func MakeHandlerUpdateTrigger(
 			r.SetURI(mrd)
 		}
 
-		// Should add the populated metric report definition event as a response?
-		publishHelper(logger, bus, respEvent)
+		// wont actually wait since event is not sync
+		event.PublishEventAndWait(context.Background(), bus, respEvent)
 	}
 }
 
@@ -499,8 +493,8 @@ func MakeHandlerDeleteTrigger(
 	bus eh.EventBus,
 	dbmaint map[string]struct{},
 ) func(eh.Event) {
-	return func(event eh.Event) {
-		trigger, ok := event.Data().(*DeleteTriggerCommandData)
+	return func(evt eh.Event) {
+		trigger, ok := evt.Data().(*DeleteTriggerCommandData)
 		if !ok {
 			logger.Crit(typeAssertError)
 			return
@@ -526,7 +520,8 @@ func MakeHandlerDeleteTrigger(
 			r.SetURI(mrd)
 		}
 
-		publishHelper(logger, bus, respEvent)
+		// wont actually wait since event is not sync
+		event.PublishEventAndWait(context.Background(), bus, respEvent)
 	}
 }
 
@@ -536,8 +531,8 @@ func MakeHandlerDeleteMR(
 	msgreg eemi.MessageRegistry,
 	bus eh.EventBus,
 ) func(eh.Event) {
-	return func(event eh.Event) {
-		report, ok := event.Data().(*DeleteMRCommandData)
+	return func(evt eh.Event) {
+		report, ok := evt.Data().(*DeleteMRCommandData)
 		if !ok {
 			logger.Crit(typeAssertError)
 			return
@@ -556,7 +551,8 @@ func MakeHandlerDeleteMR(
 			return
 		}
 
-		publishHelper(logger, bus, respEvent)
+		// wont actually wait since event is not sync
+		event.PublishEventAndWait(context.Background(), bus, respEvent)
 	}
 }
 
@@ -566,8 +562,8 @@ func MakeHandlerGenReport(
 	msgreg eemi.MessageRegistry,
 	bus eh.EventBus,
 ) func(eh.Event) {
-	return func(event eh.Event) {
-		report, ok := event.Data().(*metric.GenerateReportCommandData)
+	return func(evt eh.Event) {
+		report, ok := evt.Data().(*metric.GenerateReportCommandData)
 		if !ok {
 			logger.Crit(typeAssertError)
 			return
@@ -585,7 +581,8 @@ func MakeHandlerGenReport(
 			return
 		}
 
-		publishHelper(logger, bus, respEvent)
+		// wont actually wait since event is not sync
+		event.PublishEventAndWait(context.Background(), bus, respEvent)
 		if reportError != nil {
 			return
 		}
@@ -593,20 +590,23 @@ func MakeHandlerGenReport(
 		// Generate the generic "Report Generated" event that things like triggers
 		// and such operate off. Only publish when there is no error generating report
 		logger.Info("Generated Report", "MRD-Name", report.MRDName, "MR-Name", mrName, "module", "ReportGeneration")
-		publishHelper(logger, bus,
-			eh.NewEvent(metric.ReportGenerated, &metric.ReportGeneratedData{MRDName: report.MRDName, MRName: mrName}, time.Now()))
+		event.Publish(
+			context.Background(),
+			bus,
+			metric.ReportGenerated,
+			&metric.ReportGeneratedData{MRDName: report.MRDName, MRName: mrName})
 	}
 }
 
 func MakeHandlerMV(logger log.Logger, telemetryMgr *telemetryManager, bus eh.EventBus) func(eh.Event) {
-	return func(event eh.Event) {
+	return func(evt eh.Event) {
 		// This is a MULTI Handler! This function is called with an ARRAY of event
 		// data, not the normal single event data.  This means we can wrap the
 		// insert in a transaction and insert everything in the array in a single
 		// transaction for a good performance boost.
 		instancesUpdated := map[int64]struct{}{}
 		err := telemetryMgr.wrapWithTX(func(tx *sqlx.Tx) error {
-			dataArray, ok := event.Data().([]eh.EventData)
+			dataArray, ok := evt.Data().([]eh.EventData)
 			if !ok {
 				logger.Crit(typeAssertError)
 				return nil
@@ -652,7 +652,7 @@ func MakeHandlerMV(logger log.Logger, telemetryMgr *telemetryManager, bus eh.Eve
 func MakeHandlerClock(logger log.Logger, telemetryMgr *telemetryManager, bus eh.EventBus, dbmaint map[string]struct{}) func(eh.Event) {
 	// close over lastHWM
 	lastHWM := time.Time{}
-	return func(event eh.Event) {
+	return func(evt eh.Event) {
 		// if no events have kickstarted the clock, bail
 		if telemetryMgr.MetricTSHWM.IsZero() {
 			return
@@ -667,7 +667,11 @@ func MakeHandlerClock(logger log.Logger, telemetryMgr *telemetryManager, bus eh.
 
 		pubReport := func(mrd string, mr string) {
 			logger.Info("Generated Report", "MRD-Name", mrd, "MR-Name", mr, "module", "ReportGeneration")
-			publishHelper(logger, bus, eh.NewEvent(metric.ReportGenerated, &metric.ReportGeneratedData{MRDName: mrd, MRName: mr}, time.Now()))
+			event.Publish(
+				context.Background(),
+				bus,
+				metric.ReportGenerated,
+				&metric.ReportGeneratedData{MRDName: mrd, MRName: mr})
 		}
 
 		// Generate any metric reports that need it
@@ -682,8 +686,8 @@ func MakeHandlerClock(logger log.Logger, telemetryMgr *telemetryManager, bus eh.
 }
 
 func MakeHandlerMaintenance(logger log.Logger, dbmaint map[string]struct{}) func(eh.Event) {
-	return func(event eh.Event) {
-		command, ok := event.Data().(string)
+	return func(evt eh.Event) {
+		command, ok := evt.Data().(string)
 		if !ok {
 			logger.Crit(typeAssertError)
 			return
