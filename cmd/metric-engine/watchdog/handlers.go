@@ -69,33 +69,16 @@ func StartWatchdogHandling(logger log.Logger, am3Svc eventHandlingService, d bus
 	return nil
 }
 
-func CreatePublishSyncEvent(ctx context.Context, bus eh.EventBus, et eh.EventType, mutator func(eh.EventData)) error {
-	data, err := eh.CreateEventData(et)
-	if err != nil {
-		return xerrors.Errorf("error creating event: %w", err)
-	}
-	if mutator != nil {
-		mutator(data)
-	}
-	evt := event.NewSyncEvent(et, data, time.Now())
-	evt.Add(1)
-	err = bus.PublishEvent(ctx, evt)
-	if err != nil {
-		return xerrors.Errorf("error publishing event: %w", err)
-	}
-	evt.Wait()
-	return nil
-}
-
 func generateWatchdogEvents(logger log.Logger, bus eh.EventBus, interval time.Duration) {
 	logger.Info("Setting up watchdog.", "interval-in-milliseconds", interval)
 	watchdogTicker := time.NewTicker(interval)
 	defer watchdogTicker.Stop()
 	// this runs forever
 	for range watchdogTicker.C {
-		err := CreatePublishSyncEvent(context.Background(), bus, WDEvent, nil)
+		wdEventData, err := eh.CreateEventData(WDEvent)
 		if err != nil {
-			logger.Crit("error publishing event", "err", err)
+			logger.Crit("event allocation failed", "err", err)
 		}
+		event.Publish(context.Background(), bus, WDEvent, wdEventData)
 	}
 }
