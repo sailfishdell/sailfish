@@ -18,6 +18,7 @@ import (
 	"github.com/superchalupa/sailfish/cmd/metric-engine/metric"
 	"github.com/superchalupa/sailfish/src/fileutils"
 	"github.com/superchalupa/sailfish/src/looplab/event"
+	"github.com/superchalupa/sailfish/src/ocp/am3"
 
 	log "github.com/superchalupa/sailfish/src/log"
 )
@@ -34,10 +35,6 @@ type busComponents interface {
 	GetBus() eh.EventBus
 }
 
-type eventHandlingService interface {
-	AddEventHandler(string, eh.EventType, func(eh.Event)) error
-}
-
 type SubscriberMap map[string]*os.File
 
 type subscriptionData struct {
@@ -45,7 +42,7 @@ type subscriptionData struct {
 }
 
 // StartupTriggerProcessing will attach event handlers to handle subscriber events
-func StartupTriggerProcessing(logger log.Logger, cfg *viper.Viper, am3Svc eventHandlingService,
+func StartupTriggerProcessing(logger log.Logger, cfg *viper.Viper, am3Svc am3.Service,
 	d busComponents) error {
 	logger = log.With(logger, "module", "trigger") // set up logger module so that we can filter
 	activeSubs := make(map[string]*os.File)
@@ -222,7 +219,7 @@ func MakeHandlerPrintSubscribers(logger log.Logger, activeSubs map[string]*os.Fi
 func setupEventHandlers(
 	logger log.Logger,
 	bus eh.EventBus,
-	am3Svc eventHandlingService,
+	am3Svc am3.Service,
 	activeSubs map[string]*os.File,
 	cfg *viper.Viper, // don't pass this anywhere out of this func
 ) error {

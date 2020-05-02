@@ -59,11 +59,6 @@ type busComponents interface {
 	GetWaiter() *eventwaiter.EventWaiter
 }
 
-type eventHandler interface {
-	AddEventHandler(string, eh.EventType, func(eh.Event)) error
-	AddMultiHandler(string, eh.EventType, func(eh.Event)) error
-}
-
 // publishHelper will log/eat the error from PublishEvent since we can't do anything useful with it
 // IFF event passed is a SyncEvent, it will synchronously wait for it.
 // BE CAREFUL to not send sync events from AM3 handlers! High likelihood of unpredictable lockups.
@@ -117,7 +112,7 @@ func backgroundTasks(logger log.Logger, bus eh.EventBus, shutdown chan struct{})
 // anyways.
 //
 // Don't leak cfg argument out of this function
-func Startup(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d busComponents) (func(), error) {
+func Startup(logger log.Logger, cfg *viper.Viper, am3Svc am3.Service, d busComponents) (func(), error) {
 	database, err := sqlx.Open("sqlite3", cfg.GetString("main.databasepath"))
 	if err != nil {
 		return nil, xerrors.Errorf("could not open database(%s): %w", cfg.GetString("main.databasepath"))
@@ -166,7 +161,7 @@ func Startup(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d busComp
 
 func addEventHandlers(
 	logger log.Logger,
-	am3Svc *am3.Service,
+	am3Svc am3.Service,
 	telemetryMgr *telemetryManager,
 	msgreg eemi.MessageRegistry,
 	d busComponents,
@@ -185,7 +180,7 @@ func addEventHandlers(
 	for _, h := range []struct {
 		desc    string
 		evtType eh.EventType
-		fn      func(eh.Event)
+		fn      am3.EventHandler
 	}{
 		{"Generic GET Data", GenericGETCommandEvent, MakeHandlerGenericGET(logger, telemetryMgr, msgreg, bus)},
 		{"Create Metric Report Definition", AddMRDCommandEvent, MakeHandlerCreateMRD(logger, telemetryMgr, msgreg, bus, dbmaint)},

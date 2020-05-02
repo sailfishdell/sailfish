@@ -43,7 +43,7 @@ type AttributeLink struct {
 var collections []Collection
 var attributeLinks []AttributeLink
 
-func addAM3Functions(logger log.Logger, am3Svc *am3.Service, d *domain.DomainObjects, ctx context.Context) {
+func addAM3Functions(logger log.Logger, am3Svc am3.Service, d *domain.DomainObjects, ctx context.Context) {
 	am3Svc.AddEventHandler("modular_update_fan_data", godefs.FanEvent, func(event eh.Event) {
 		dmobj, ok1 := event.Data().(*godefs.DMObject)
 		fanobj, ok2 := dmobj.Data.(*godefs.DM_thp_fan_data_object)

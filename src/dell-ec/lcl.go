@@ -74,7 +74,7 @@ early_out:
 	return ret_string
 }
 
-func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, am3Svc *am3.Service, ch eh.CommandHandler, d *domain.DomainObjects) {
+func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, am3Svc am3.Service, ch eh.CommandHandler, d *domain.DomainObjects) {
 	awesome_mapper2.AddFunction("health_alert", func(args ...interface{}) (interface{}, error) {
 		ss, ok := args[0].(string)
 		if !ok {

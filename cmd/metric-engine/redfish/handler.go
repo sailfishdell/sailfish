@@ -88,7 +88,7 @@ func (rf *RFServer) AddHandlersToRouter(m *mux.Router) {
 	m.PathPrefix("/redfish/v1/TelemetryService").HandlerFunc(rf.makeCommand(telemetry.GenericGETCommandEvent)).Methods("GET")
 }
 
-func Startup(logger log.Logger, am3Svc *am3.Service, d busComponents) error {
+func Startup(logger log.Logger, am3Svc am3.Service, d busComponents) error {
 	// Important: don't leak 'cfg' outside the scope of this function!
 
 	// specifically set up promise and call now, this will block until message registry is set up

@@ -19,12 +19,8 @@ import (
 	"github.com/superchalupa/sailfish/src/fileutils"
 	log "github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/looplab/eventwaiter"
+	"github.com/superchalupa/sailfish/src/ocp/am3"
 )
-
-type eventHandler interface {
-	AddEventHandler(string, eh.EventType, func(eh.Event)) error
-	AddMultiHandler(string, eh.EventType, func(eh.Event)) error
-}
 
 const (
 	persistChanLen   = 5 // may move to yaml
@@ -58,9 +54,7 @@ type persistMeta struct {
 	recovType  eh.EventType
 }
 
-func Handler(ctx context.Context, logger log.Logger, cfg *viper.Viper, am3Svc eventHandler, d busIntf) {
-
-	// setup viper defaults
+func Handler(ctx context.Context, logger log.Logger, cfg *viper.Viper, am3Svc am3.Service, d busIntf) {
 	ch := make(chan persistMeta, persistChanLen)
 	pmrdDir := cfg.GetString("persistence.topsavedir") + mrdDir
 	pROmrdDir := cfg.GetString("persistence.topimportonlydir") + mrdDir
