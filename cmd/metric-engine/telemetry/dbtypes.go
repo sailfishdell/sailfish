@@ -70,7 +70,7 @@ var conversions []conversion = []conversion{
 
 func (m *RedfishDuration) UnmarshalJSON(data []byte) error {
 	// for null json value in collection duration
-	if bytes.Compare([]byte("null"), data) == 0 {
+	if bytes.Equal([]byte("null"), data) {
 		return nil
 	}
 
