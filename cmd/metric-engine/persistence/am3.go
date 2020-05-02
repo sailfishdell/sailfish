@@ -3,12 +3,13 @@ package persistence
 import (
 	"context"
 	"encoding/json"
-	"golang.org/x/xerrors"
 	"io"
 	"io/ioutil"
 	"os"
 	"strings"
 	"time"
+
+	"golang.org/x/xerrors"
 
 	eh "github.com/looplab/eventhorizon"
 	"github.com/spf13/viper"
