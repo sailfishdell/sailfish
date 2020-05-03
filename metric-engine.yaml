@@ -1860,6 +1860,20 @@ createdb:
           '/redfish/v1/TelemetryService/MetricReportDefinitions' as [@odata.id]
 
   - |
+      DROP VIEW IF EXISTS MetricReportExtendedInfo_JSON;
+      CREATE VIEW MetricReportExtendedInfo_JSON as
+        select
+          json_object(
+            'MetricReportDefinitionEnabled', (
+              select
+                Enabled
+              where Hidden != true
+            )
+          ) as root,
+          '/redfish/v1/TelemetryService/MetricReports/' || Name as [@odata.id]
+        from MetricReportDefinition WHERE Enabled != true
+
+  - |
       DROP VIEW IF EXISTS TelemetryService_JSON;
       CREATE VIEW TelemetryService_JSON as
       select
@@ -1910,6 +1924,8 @@ createdb:
         select root, [@odata.id] from TriggerCollection_JSON
           UNION ALL
         select root, [@odata.id] from Trigger_JSON
+          UNION ALL
+        select root, [@odata.id] from MetricReportExtendedInfo_JSON
 
 # Backwards compat stuff to get the fcgi_rfsql to work. Drop the tables in a separate statement because it can error out (and be ignored)
   - |
