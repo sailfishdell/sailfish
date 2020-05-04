@@ -3,7 +3,6 @@ package persistence
 import (
 	"context"
 	"encoding/json"
-	"io"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -39,7 +38,7 @@ const (
 )
 
 type Response interface {
-	StreamResponse(io.Writer) error
+	GetStatus() int
 }
 
 type urigetter interface {
@@ -99,6 +98,11 @@ func uriGetter(event eh.Event) string {
 func MakeHandlerAddToChan(logger log.Logger, ch chan persistMeta, saveDir string, bkupDir string, recovType eh.EventType, jsonAction int) func(eh.Event) {
 	return func(event eh.Event) {
 		URI := uriGetter(event)
+
+		respData, ok := event.Data().(Response)
+		if ok && respData.GetStatus() != metric.HTTPStatusOk {
+			return
+		}
 
 		ch <- persistMeta{
 			URI,
