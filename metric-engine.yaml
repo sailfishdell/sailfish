@@ -3,7 +3,7 @@
 
 pprof: [ "unix:/run/telemetryservice/http.socket" ]
 SSE: [ "unix:/run/telemetryservice/http.socket" ]
-Redfish: [ "unix:/run/telemetryservice/http.socket" ,"http::8080"]
+Redfish: [ "unix:/run/telemetryservice/http.socket" ]
 pipe: [ "/run/telemetryservice/metric-engine.pipe" ]
 
 persistence:
