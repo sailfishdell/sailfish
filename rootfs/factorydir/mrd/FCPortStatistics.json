@@ -1,0 +1,53 @@
+{
+  "Id": "FCPortStatistics",
+  "Name": "FC Port Statistics Metric Report Definition",
+  "Description": "Fibre Channel Port statistics",
+  "MetricReportDefinitionType": "Periodic",
+  "MetricReportDefinitionEnabled": true,
+  "Schedule": {
+    "RecurrenceInterval": "PT60S"
+
+  },
+  "ReportActions": [
+    "LogToMetricReportsCollection"
+  ],
+  "ReportUpdates": "Overwrite",
+  "Metrics": [
+    {
+      "MetricId": "FCInvalidCRCs"
+    },
+    {
+      "MetricId": "FCLinkFailures"
+    },
+    {
+      "MetricId": "FCLossOfSignals"
+    },
+    {
+      "MetricId": "FCRxKBCount"
+    },
+    {
+      "MetricId": "FCRxSequences"
+    },
+    {
+      "MetricId": "FCRxTotalFrames"
+    },
+    {
+      "MetricId": "FCTxKBCount"
+    },
+    {
+      "MetricId": "FCTxSequences"
+    },
+    {
+      "MetricId": "FCTxTotalFrames"
+    },
+    {
+      "MetricId": "FcStatOSDriverState"
+    },
+    {
+      "MetricId": "PortSpeed"
+    },
+    {
+      "MetricId": "PortStatus"
+    }
+  ]
+}

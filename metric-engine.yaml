@@ -466,6 +466,73 @@ UDB-Metric-Import:
       FROM TblRAID_PDSmartData_SAS_SATA
       WHERE Timestamp > :HWM
 
+
+  FCPortStatistics:
+    Type: MetricColumns
+    ScanInterval: 0
+    WaitInterval: 60
+    DBChange:
+      DMLiveObjectDatabase.db:
+        TblFC_Port_Stats_Obj:
+        TblFC_Standard_Obj:
+        TblFC_Cap_Obj:
+    Query: |
+      SELECT DISTINCT
+        TblFC_Port_Stats_Obj.StatisticsTime * 1000000000 as Timestamp,
+        TblFC_Cap_Obj.hdr_DOT_fqdd as Context,
+        'DMLiveObjectDatabase.db::TblFC_Port_Stats_Obj::' || TblFC_Port_Stats_Obj.ROWID as MVSourceTraceInfo,
+         '/redfish/v1/FIXME/' || TblFC_Cap_Obj.hdr_DOT_fqdd as Property,
+        TblFC_Cap_Obj.hdr_DOT_fqdd as FQDD,
+        30000000000 as 'SensorInterval',  -- 5s interval w/ 1s slack
+        5000000000 as 'SensorSlack',
+        true as 'RequiresExpand',
+
+        TblFC_Port_Stats_Obj.FCInvalidCRCs as 'Metric-FCInvalidCRCs',
+        TblFC_Port_Stats_Obj.FCLinkFailures as 'Metric-FCLinkFailures',
+        TblFC_Port_Stats_Obj.FCLossOfSignals as 'Metric-FCLossOfSignals',
+        TblFC_Port_Stats_Obj.FCRxKBCount as 'Metric-FCRxKBCount',
+        TblFC_Port_Stats_Obj.FCRxSequences as 'Metric-FCRxSequences',
+        TblFC_Port_Stats_Obj.FCRxTotalFrames as 'Metric-FCRxTotalFrames',
+        TblFC_Port_Stats_Obj.FCTxKBCount as 'Metric-FCTxKBCount',
+        TblFC_Port_Stats_Obj.FCTxSequences as 'Metric-FCTxSequences',
+        TblFC_Port_Stats_Obj.FCTxTotalFrames as 'Metric-FCTxTotalFrames',
+        CASE TblFC_Standard_Obj.OSDriverState
+        WHEN 0 then "Non-operational"
+        WHEN 1 then "Operational"
+        WHEN 2 then "Unknown"
+        ELSE null
+        END as 'Metric-FcStatOSDriverState',
+
+        CASE TblFC_Standard_Obj.PortSpeed 
+        WHEN 0 then "No Link"
+        WHEN 1 then "2 Gbps"
+        WHEN 2 then "4 Gbps"
+        WHEN 3 then "8 Gbps"
+        WHEN 4 then "16 Gbps"
+        WHEN 5 then "32 Gbps"
+        WHEN 6 then "64 Gbps"
+        WHEN 7 then "128 Gbps"
+        WHEN 8 then "256 Gpbs"
+        WHEN 9 then "Unknown"
+        END as 'Metric-PortSpeed',
+
+        CASE TblFC_Standard_Obj.PortStatus
+        WHEN 0 then "Down"
+        WHEN 1 then "Up"
+        WHEN 2 then "Unknown"
+        ELSE null
+        END as 'Metric-Portstatus'
+
+      FROM TblFC_Port_Stats_Obj
+      left join TblFC_Cap_Obj
+         on(instr(TblFC_Cap_Obj.hdr_DOT_fqdd, TblFC_Cap_Obj.hdr_DOT_fqdd) > 0)
+      left join TblFC_Standard_Obj
+         on(instr(TblFC_Port_Stats_Obj.hdr_DOT_fqdd, TblFC_Standard_Obj.hdr_DOT_fqdd)> 0)
+      WHERE ((select ActiveOIDMapping.ObjType from ActiveOIDMapping
+         where TblFC_Port_Stats_Obj.OID=ActiveOIDMapping.OID ) = 1841)
+      AND Timestamp > :HWM
+
+
   GPU-Statistics:
     Type: MetricColumns
     # SingleRecordEtag is the underlying HWM, so we can scan the table more often
@@ -2096,6 +2163,7 @@ createdb:
         DROP VIEW IF EXISTS SensorMRView_json ; create view SensorMRView_json as select * from JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricReports/Sensor';
         DROP VIEW IF EXISTS StorageDiskSMARTDataMRView_json ; create view StorageDiskSMARTDataMRView_json as select * from JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricReports/StorageDiskSMARTData';
         DROP VIEW IF EXISTS StorageSensorMRView_json ; create view StorageSensorMRView_json as select * from JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricReports/StorageSensor';
+        DROP VIEW IF EXISTS FCPortStatisticsMRView_json; create view FCPortStatisticsMRView_json as select * from JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricReports/FCPortStatistics';
         DROP VIEW IF EXISTS ThermalSensorMRView_json ; create view ThermalSensorMRView_json as select * from  JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricReports/ThermalSensor';
         DROP VIEW IF EXISTS ThermalMetricsMRView_json ; create view ThermalMetricsMRView_json as select * from  JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricReports/ThermalMetrics';
 
