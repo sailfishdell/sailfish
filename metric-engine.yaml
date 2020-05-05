@@ -1660,18 +1660,18 @@ createdb:
       DROP VIEW IF EXISTS MetricReportCollection_JSON;
       CREATE VIEW MetricReportCollection_JSON as
         select
-          json_object(
-            '@odata.context', '/redfish/v1/$metadata#MetricReportCollection.MetricReportCollection',
-            '@odata.id', '/redfish/v1/TelemetryService/MetricReports',
-            '@odata.type', '#MetricReportCollection.MetricReportCollection',
-            'Name', 'MetricReports',
-            'Members',
-            (
-            select
-              json_group_array( json_object('@odata.id', [@odata.id]) )
-            from MetricReport_JSON
-            where Hidden != true
-            )
+          json_patch(
+            json_object(
+              '@odata.context', '/redfish/v1/$metadata#MetricReportCollection.MetricReportCollection',
+              '@odata.id', '/redfish/v1/TelemetryService/MetricReports',
+              '@odata.type', '#MetricReportCollection.MetricReportCollection',
+              'Name', 'MetricReports'),
+            json(ifnull((
+                SELECT
+                  '{ "Members": ' ||  json_group_array( json_object('@odata.id', [@odata.id]) ) || ', ' ||
+                  ' "Members@odata.count": ' ||  count(*) || '}'
+                FROM MetricReport_JSON
+                  ),  ' "Members":  [], "Members@odata.count":  0 '))
           ) as root,
           '/redfish/v1/TelemetryService/MetricReports' as [@odata.id]
 
@@ -1777,17 +1777,18 @@ createdb:
       DROP VIEW IF EXISTS MetricReportDefinitionCollection_JSON;
       CREATE VIEW MetricReportDefinitionCollection_JSON as
         select
-          json_object(
-            "@odata.context", "/redfish/v1/$metadata#MetricReportDefinitionCollection.MetricReportDefinitionCollection",
-            "@odata.id", "/redfish/v1/TelemetryService/MetricReportDefinitions",
-            "@odata.type", "#MetricReportDefinitionCollection.MetricReportDefinitionCollection",
-            "Name", "MetricReportDefinitions",
-            'Members', (
-              select
-                json_group_array( json_object('@odata.id', [@odata.id]) )
-              from MetricReportDefinition_JSON
-              where Hidden != true
-            )
+          json_patch(
+            json_object(
+              "@odata.context", "/redfish/v1/$metadata#MetricReportDefinitionCollection.MetricReportDefinitionCollection",
+              "@odata.id", "/redfish/v1/TelemetryService/MetricReportDefinitions",
+              "@odata.type", "#MetricReportDefinitionCollection.MetricReportDefinitionCollection",
+              "Name", "MetricReportDefinitions"),
+            json(ifnull((
+                SELECT
+                  '{ "Members": ' ||  json_group_array( json_object('@odata.id', [@odata.id]) ) || ', ' ||
+                  ' "Members@odata.count": ' ||  count(*) || '}'
+                FROM MetricReportDefinition_JSON
+                  ),  ' "Members":  [], "Members@odata.count":  0 '))
           ) as root,
           '/redfish/v1/TelemetryService/MetricReportDefinitions' as [@odata.id]
 
@@ -2001,19 +2002,21 @@ createdb:
        FROM Trigger;
 
   - |
-     CREATE VIEW IF NOT EXISTS TriggerCollectionView_JSON as
+     CREATE VIEW IF NOT EXISTS TriggerCollection_JSON as
       select
-      json_object(
-      "@odata.context", "/redfish/v1/$metadata#TriggerCollection.TriggerCollection",
-      "@odata.id", "/redfish/v1/TelemetryService/Triggers",
-      "@odata.type", "#TriggerCollection.TriggerCollection",
-      "Name", "Triggers",
-      'Members', (
-        select
-          json_group_array( json_object('@odata.id', [@odata.id]) )
-        from Trigger_JSON
-       )
-      ) as root,
+      json_patch(
+        json_object(
+          "@odata.context", "/redfish/v1/$metadata#TriggerCollection.TriggerCollection",
+          "@odata.id", "/redfish/v1/TelemetryService/Triggers",
+          "@odata.type", "#TriggerCollection.TriggerCollection",
+          "Name", "Triggers"),
+        json(ifnull((
+          SELECT
+            '{ "Members": ' ||  json_group_array( json_object('@odata.id', [@odata.id]) ) || ', ' ||
+            ' "Members@odata.count": ' ||  count(*) || '}'
+          FROM Trigger_JSON
+          ),  ' "Members":  [], "Members@odata.count":  0 '))
+      )as root,
         '/redfish/v1/TelemetryService/Triggers' as [@odata.id]
 
   # Table populated at metric-engine start by reading MD jsons
@@ -2057,18 +2060,20 @@ createdb:
   - |
      CREATE VIEW IF NOT EXISTS MetricDefinitionCollection_JSON as
       select
+      json_patch(
        json_object(
         "@odata.context", "/redfish/v1/$metadata#MetricDefinitionCollection.MetricDefinitionCollection",
         "@odata.id", "/redfish/v1/TelemetryService/MetricDefinitions",
         "@odata.type", "#MetricDefinitionCollection.MetricDefinitionCollection",
-        "Name", "MetricDefinitions",
-        'Members', (
-          select
-            json_group_array( json_object('@odata.id', [@odata.id]) )
-            from MetricDefinition_JSON
-        )
+        "Name", "MetricDefinitions"),
+       json(ifnull((
+                SELECT
+                  '{ "Members": ' ||  json_group_array( json_object('@odata.id', [@odata.id]) ) || ', ' ||
+                  ' "Members@odata.count": ' ||  count(*) || '}'
+                FROM MetricDefinition_JSON
+                  ),  ' "Members":  [], "Members@odata.count":  0 '))
        ) as root,
-            '/redfish/v1/TelemetryService/MetricDefinitions' as [@odata.id];
+       '/redfish/v1/TelemetryService/MetricDefinitions' as [@odata.id];
 
   - |
         DROP VIEW IF EXISTS AggregationMetricsMRView_json ; create view AggregationMetricsMRView_json as select * from JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricReports/AggregationMetrics';
