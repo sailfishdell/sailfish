@@ -1,7 +1,5 @@
 package log
 
-import ()
-
 // Logger type is a lowest-common-denominator logging interface that can be adapted to work with many different logging subsystems
 type Logger interface {
 	Debug(msg string, ctx ...interface{})
