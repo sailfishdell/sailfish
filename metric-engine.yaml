@@ -1909,7 +1909,7 @@ createdb:
              UNION ALL
         select root, [@odata.id] from Trigger_JSON
              UNION ALL
-         select root, [@odata.id] from TriggerCollectionView_JSON
+         select root, [@odata.id] from TriggerCollection_JSON
 
 # Backwards compat stuff to get the fcgi_rfsql to work. Drop the tables in a separate statement because it can error out (and be ignored)
   - |
