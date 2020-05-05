@@ -9,6 +9,7 @@ import (
 	log "github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/ocp/am3"
 
+	"github.com/superchalupa/sailfish/cmd/metric-engine/eemi"
 	"github.com/superchalupa/sailfish/cmd/metric-engine/metric"
 	"github.com/superchalupa/sailfish/cmd/metric-engine/persistence"
 	"github.com/superchalupa/sailfish/cmd/metric-engine/telemetry"
@@ -49,8 +50,14 @@ func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d am3.Bu
 	// setup viper defaults
 	setDefaults(cfgMgr)
 
+	// message registry for everybody to use
+	am3SvcN2, _ := am3.StartService(ctx, log.With(logger, "module", "AM3_TDB"), "database", d)
+	err := eemi.Startup(log.With(logger, "module", "eemi"), cfgMgr, am3SvcN2, d)
+	if err != nil {
+		panic("Error initializing message registry: " + err.Error())
+	}
+
 	// Processing loop 1: telemetry database
-	am3SvcN2, _ := am3.StartService(ctx, log.With(logger, "module", "AM3_DB"), "database", d)
 	shutdownbase, err := telemetry.Startup(log.With(logger, "module", "telemetry"), cfgMgr, am3SvcN2, d)
 	if err != nil {
 		panic("Error initializing base telemetry subsystem: " + err.Error())

@@ -10,9 +10,12 @@ import (
 	"github.com/spf13/viper"
 	"golang.org/x/xerrors"
 
+	"github.com/superchalupa/sailfish/cmd/metric-engine/eemi"
 	"github.com/superchalupa/sailfish/cmd/metric-engine/metric"
 	log "github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/looplab/event"
+	"github.com/superchalupa/sailfish/src/looplab/eventwaiter"
+	"github.com/superchalupa/sailfish/src/ocp/am3"
 )
 
 // "configuration" -- TODO: need to move to config file
@@ -53,6 +56,7 @@ type urisetter interface {
 
 type busComponents interface {
 	GetBus() eh.EventBus
+	GetWaiter() *eventwaiter.EventWaiter
 }
 
 type eventHandler interface {
@@ -111,7 +115,9 @@ func backgroundTasks(logger log.Logger, bus eh.EventBus, shutdown chan struct{})
 // SO: we will ensure that we have ONLY ONE GOROUTINE that does transactions.
 // This isn't a terrible limitation as it is sort of what we want to do
 // anyways.
-func Startup(logger log.Logger, cfg *viper.Viper, am3Svc eventHandler, d busComponents) (func(), error) {
+//
+// Don't leak cfg argument out of this function
+func Startup(logger log.Logger, cfg *viper.Viper, am3Svc *am3.Service, d busComponents) (func(), error) {
 	database, err := sqlx.Open("sqlite3", cfg.GetString("main.databasepath"))
 	if err != nil {
 		return nil, xerrors.Errorf("could not open database(%s): %w", cfg.GetString("main.databasepath"))
@@ -139,9 +145,10 @@ func Startup(logger log.Logger, cfg *viper.Viper, am3Svc eventHandler, d busComp
 		return nil, xerrors.Errorf("telemetry manager initialization failed: %w", err)
 	}
 
-	cfg = nil // hint to runtime that we dont need cfg after this point. dont pass this into functions below here
+	// can return a promise, but we'll wait here otherwise it could hang if we do it from a message handler
+	msgreg := eemi.DeferredGetMsgreg(logger, d)()
 
-	err = addEventHandlers(logger, am3Svc, telemetryMgr, d)
+	err = addEventHandlers(logger, am3Svc, telemetryMgr, msgreg, d)
 	if err != nil {
 		database.Close()
 		return nil, xerrors.Errorf("error adding am3 event handlers: %w", err)
@@ -157,7 +164,15 @@ func Startup(logger log.Logger, cfg *viper.Viper, am3Svc eventHandler, d busComp
 	}, nil
 }
 
-func addEventHandlers(logger log.Logger, am3Svc eventHandler, telemetryMgr *telemetryManager, d busComponents) error {
+func addEventHandlers(
+	logger log.Logger,
+	am3Svc *am3.Service,
+	telemetryMgr *telemetryManager,
+	msgreg eemi.MessageRegistry,
+	d busComponents,
+) error {
+	bus := d.GetBus()
+
 	// use this to keep track of maintenance tasks to run on the next clock tick.
 	// start out by priming for cleanup tasks on startup
 	dbmaint := map[string]struct{}{
@@ -167,61 +182,33 @@ func addEventHandlers(logger log.Logger, am3Svc eventHandler, telemetryMgr *tele
 		cleanValues:   {},
 	}
 
-	bus := d.GetBus()
-	err := am3Svc.AddEventHandler("Generic GET Data", GenericGETCommandEvent, MakeHandlerGenericGET(logger, telemetryMgr, bus))
-	if err != nil {
-		return err
-	}
-	err = am3Svc.AddEventHandler("Create Metric Report Definition", AddMRDCommandEvent, MakeHandlerCreateMRD(logger, telemetryMgr, bus, dbmaint))
-	if err != nil {
-		return err
-	}
-	err = am3Svc.AddEventHandler("Delete Metric Report Definition", DeleteMRDCommandEvent, MakeHandlerDeleteMRD(logger, telemetryMgr, bus, dbmaint))
-	if err != nil {
-		return err
-	}
-	err = am3Svc.AddEventHandler("Delete Metric Report", DeleteMRCommandEvent, MakeHandlerDeleteMR(logger, telemetryMgr, bus))
-	if err != nil {
-		return err
-	}
-	err = am3Svc.AddEventHandler("Update Metric Report Definition", UpdateMRDCommandEvent, MakeHandlerUpdateMRD(logger, telemetryMgr, bus, dbmaint))
-	if err != nil {
-		return err
-	}
-	err = am3Svc.AddEventHandler("Create Metric Definition", AddMDCommandEvent, MakeHandlerCreateMD(logger, telemetryMgr, bus))
-	if err != nil {
-		return err
-	}
-	err = am3Svc.AddEventHandler("Create Trigger", CreateTriggerCommandEvent, MakeHandlerCreateTrigger(logger, telemetryMgr, bus))
-	if err != nil {
-		return err
-	}
-	err = am3Svc.AddEventHandler("Add Trigger", AddTriggerCommandEvent, MakeHandlerAddTrigger(logger, telemetryMgr, bus, dbmaint))
-	if err != nil {
-		return err
-	}
-	err = am3Svc.AddEventHandler("Update Trigger", UpdateTriggerCommandEvent, MakeHandlerUpdateTrigger(logger, telemetryMgr, bus, dbmaint))
-	if err != nil {
-		return err
-	}
-	err = am3Svc.AddEventHandler("Delete Trigger", DeleteTriggerCommandEvent, MakeHandlerDeleteTrigger(logger, telemetryMgr, bus, dbmaint))
-	if err != nil {
-		return err
-	}
-	err = am3Svc.AddEventHandler("Generate Metric Report", metric.GenerateReportCommandEvent, MakeHandlerGenReport(logger, telemetryMgr, bus))
-	if err != nil {
-		return err
+	for _, h := range []struct {
+		desc    string
+		evtType eh.EventType
+		fn      func(eh.Event)
+	}{
+		{"Generic GET Data", GenericGETCommandEvent, MakeHandlerGenericGET(logger, telemetryMgr, msgreg, bus)},
+		{"Create Metric Report Definition", AddMRDCommandEvent, MakeHandlerCreateMRD(logger, telemetryMgr, msgreg, bus, dbmaint)},
+		{"Update Metric Report Definition", UpdateMRDCommandEvent, MakeHandlerUpdateMRD(logger, telemetryMgr, msgreg, bus, dbmaint)},
+		{"Delete Metric Report Definition", DeleteMRDCommandEvent, MakeHandlerDeleteMRD(logger, telemetryMgr, msgreg, bus, dbmaint)},
+		{"Create Metric Definition", AddMDCommandEvent, MakeHandlerCreateMD(logger, telemetryMgr, msgreg, bus)},
+		{"Delete Metric Report", DeleteMRCommandEvent, MakeHandlerDeleteMR(logger, telemetryMgr, msgreg, bus)},
+
+		{"Add Trigger", AddTriggerCommandEvent, MakeHandlerAddTrigger(logger, telemetryMgr, msgreg, bus, dbmaint)},
+		{"Update Trigger", UpdateTriggerCommandEvent, MakeHandlerUpdateTrigger(logger, telemetryMgr, msgreg, bus, dbmaint)},
+		{"Delete Trigger", DeleteTriggerCommandEvent, MakeHandlerDeleteTrigger(logger, telemetryMgr, msgreg, bus, dbmaint)},
+
+		{"Generate Metric Report", metric.GenerateReportCommandEvent, MakeHandlerGenReport(logger, telemetryMgr, msgreg, bus)},
+		{"Clock", PublishClock, MakeHandlerClock(logger, telemetryMgr, bus, dbmaint)},
+		{"Database Maintenance", DatabaseMaintenance, MakeHandlerMaintenance(logger, dbmaint)},
+	} {
+		err := am3Svc.AddEventHandler(h.desc, h.evtType, h.fn)
+		if err != nil {
+			return err
+		}
 	}
 
-	err = am3Svc.AddEventHandler("Clock", PublishClock, MakeHandlerClock(logger, telemetryMgr, bus, dbmaint))
-	if err != nil {
-		return err
-	}
-	err = am3Svc.AddEventHandler("Database Maintenance", DatabaseMaintenance, MakeHandlerMaintenance(logger, dbmaint))
-	if err != nil {
-		return err
-	}
-	err = am3Svc.AddMultiHandler("Store Metric Value(s)", metric.MetricValueEvent, MakeHandlerMV(logger, telemetryMgr, bus))
+	err := am3Svc.AddMultiHandler("Store Metric Value(s)", metric.MetricValueEvent, MakeHandlerMV(logger, telemetryMgr, bus))
 	if err != nil {
 		return err
 	}
@@ -230,7 +217,12 @@ func addEventHandlers(logger log.Logger, am3Svc eventHandler, telemetryMgr *tele
 }
 
 // handle all HTTP requests for our URLs here. Need to handle all telemetry related requests.
-func MakeHandlerGenericGET(logger log.Logger, telemetryMgr *telemetryManager, bus eh.EventBus) func(eh.Event) {
+func MakeHandlerGenericGET(
+	logger log.Logger,
+	telemetryMgr *telemetryManager,
+	msgreg eemi.MessageRegistry,
+	bus eh.EventBus,
+) func(eh.Event) {
 	return func(event eh.Event) {
 		getCmd, ok := event.Data().(*GenericGETCommandData)
 		if !ok {
@@ -269,7 +261,12 @@ func MakeHandlerGenericGET(logger log.Logger, telemetryMgr *telemetryManager, bu
 	}
 }
 
-func MakeHandlerCreateMRD(logger log.Logger, telemetryMgr *telemetryManager, bus eh.EventBus, dbmaint map[string]struct{}) func(eh.Event) {
+func MakeHandlerCreateMRD(logger log.Logger,
+	telemetryMgr *telemetryManager,
+	msgreg eemi.MessageRegistry,
+	bus eh.EventBus,
+	dbmaint map[string]struct{},
+) func(eh.Event) {
 	return func(event eh.Event) {
 		reportDef, ok := event.Data().(*AddMRDCommandData)
 		if !ok {
@@ -286,7 +283,7 @@ func MakeHandlerCreateMRD(logger log.Logger, telemetryMgr *telemetryManager, bus
 		}
 
 		// Generate a "response" event that carries status back to initiator
-		respEvent, err := reportDef.NewResponseEvent(addError)
+		respEvent, err := reportDef.NewResponseEvent(msgreg, addError)
 		if err != nil {
 			logger.Crit(respCreateError, "err", err, reportDefinition, reportDef.Name)
 			return
@@ -303,7 +300,13 @@ func MakeHandlerCreateMRD(logger log.Logger, telemetryMgr *telemetryManager, bus
 	}
 }
 
-func MakeHandlerUpdateMRD(logger log.Logger, telemetryMgr *telemetryManager, bus eh.EventBus, dbmaint map[string]struct{}) func(eh.Event) {
+func MakeHandlerUpdateMRD(
+	logger log.Logger,
+	telemetryMgr *telemetryManager,
+	msgreg eemi.MessageRegistry,
+	bus eh.EventBus,
+	dbmaint map[string]struct{},
+) func(eh.Event) {
 	return func(event eh.Event) {
 		update, ok := event.Data().(*UpdateMRDCommandData)
 		if !ok {
@@ -313,7 +316,7 @@ func MakeHandlerUpdateMRD(logger log.Logger, telemetryMgr *telemetryManager, bus
 
 		// make a local by-value copy of the pointer passed in
 		localUpdate := *update
-		updError, updatedMRD := telemetryMgr.updateMRD(localUpdate.ReportDefinitionName, localUpdate.Patch)
+		updatedMRD, updError := telemetryMgr.updateMRD(localUpdate.ReportDefinitionName, localUpdate.Patch)
 		if updError != nil {
 			logger.Crit("update report definition", "Name", update.ReportDefinitionName, "err", updError)
 			return
@@ -323,7 +326,7 @@ func MakeHandlerUpdateMRD(logger log.Logger, telemetryMgr *telemetryManager, bus
 		dbmaint[deleteOrphans] = struct{}{}
 
 		// Generate a "response" event that carries status back to initiator
-		respEvent, err := localUpdate.NewResponseEvent(updError)
+		respEvent, err := localUpdate.NewResponseEvent(msgreg, updError)
 		if err != nil {
 			logger.Crit(respCreateError, "err", err, reportDefinition, update.ReportDefinitionName)
 			return
@@ -344,7 +347,13 @@ func MakeHandlerUpdateMRD(logger log.Logger, telemetryMgr *telemetryManager, bus
 	}
 }
 
-func MakeHandlerDeleteMRD(logger log.Logger, telemetryMgr *telemetryManager, bus eh.EventBus, dbmaint map[string]struct{}) func(eh.Event) {
+func MakeHandlerDeleteMRD(
+	logger log.Logger,
+	telemetryMgr *telemetryManager,
+	msgreg eemi.MessageRegistry,
+	bus eh.EventBus,
+	dbmaint map[string]struct{},
+) func(eh.Event) {
 	return func(event eh.Event) {
 		reportDef, ok := event.Data().(*DeleteMRDCommandData)
 		if !ok {
@@ -360,7 +369,7 @@ func MakeHandlerDeleteMRD(logger log.Logger, telemetryMgr *telemetryManager, bus
 		dbmaint[deleteOrphans] = struct{}{} // set bit to start orphan delete next clock tick
 
 		// Generate a "response" event that carries status back to initiator
-		respEvent, err := reportDef.NewResponseEvent(delError)
+		respEvent, err := reportDef.NewResponseEvent(msgreg, delError)
 		if err != nil {
 			logger.Crit(respCreateError, "err", err, reportDefinition, reportDef.Name)
 			return
@@ -377,7 +386,12 @@ func MakeHandlerDeleteMRD(logger log.Logger, telemetryMgr *telemetryManager, bus
 }
 
 // MD event handlers
-func MakeHandlerCreateMD(logger log.Logger, telemetryMgr *telemetryManager, bus eh.EventBus) func(eh.Event) {
+func MakeHandlerCreateMD(
+	logger log.Logger,
+	telemetryMgr *telemetryManager,
+	msgreg eemi.MessageRegistry,
+	bus eh.EventBus,
+) func(eh.Event) {
 	return func(event eh.Event) {
 		mdDef, ok := event.Data().(*AddMDCommandData)
 		if !ok {
@@ -391,7 +405,7 @@ func MakeHandlerCreateMD(logger log.Logger, telemetryMgr *telemetryManager, bus 
 		}
 
 		// Generate a "response" event that carries status back to initiator
-		respEvent, err := mdDef.NewResponseEvent(addError)
+		respEvent, err := mdDef.NewResponseEvent(msgreg, addError)
 		if err != nil {
 			logger.Crit(respCreateError, "err", err, "MetricDefinition", mdDef.MetricID)
 			return
@@ -402,33 +416,13 @@ func MakeHandlerCreateMD(logger log.Logger, telemetryMgr *telemetryManager, bus 
 }
 
 // Trigger event handlers
-func MakeHandlerCreateTrigger(logger log.Logger, telemetryMgr *telemetryManager, bus eh.EventBus) func(eh.Event) {
-	return func(event eh.Event) {
-		tdDef, ok := event.Data().(*CreateTriggerCommandData)
-		if !ok {
-			logger.Crit(typeAssertError)
-			return
-		}
-
-		// Can't write to event sent in, so make a local copy
-		locaTdDefCopy := *tdDef
-		addError := telemetryMgr.createTrigger(&locaTdDefCopy.TriggerData)
-		if addError != nil {
-			logger.Crit("create trigger", "RedfishID", tdDef.TriggerData.RedfishID, "err", addError)
-		}
-
-		// Generate a "response" event that carries status back to initiator
-		respEvent, err := tdDef.NewResponseEvent(addError)
-		if err != nil {
-			logger.Crit(respCreateError, "err", err, "Trigger", tdDef.TriggerData.RedfishID)
-			return
-		}
-
-		publishHelper(logger, bus, respEvent)
-	}
-}
-
-func MakeHandlerAddTrigger(logger log.Logger, telemetryMgr *telemetryManager, bus eh.EventBus, dbmaint map[string]struct{}) func(eh.Event) {
+func MakeHandlerAddTrigger(
+	logger log.Logger,
+	telemetryMgr *telemetryManager,
+	msgreg eemi.MessageRegistry,
+	bus eh.EventBus,
+	dbmaint map[string]struct{},
+) func(eh.Event) {
 	return func(event eh.Event) {
 		trigger, ok := event.Data().(*AddTriggerCommandData)
 		if !ok {
@@ -445,7 +439,7 @@ func MakeHandlerAddTrigger(logger log.Logger, telemetryMgr *telemetryManager, bu
 		}
 
 		// Generate a "response" event that carries status back to initiator
-		respEvent, err := trigger.NewResponseEvent(addError)
+		respEvent, err := trigger.NewResponseEvent(msgreg, addError)
 		if err != nil {
 			logger.Crit(respCreateError, "err", err, triggerDef, trigger.Name)
 			return
@@ -462,7 +456,13 @@ func MakeHandlerAddTrigger(logger log.Logger, telemetryMgr *telemetryManager, bu
 	}
 }
 
-func MakeHandlerUpdateTrigger(logger log.Logger, telemetryMgr *telemetryManager, bus eh.EventBus, dbmaint map[string]struct{}) func(eh.Event) {
+func MakeHandlerUpdateTrigger(
+	logger log.Logger,
+	telemetryMgr *telemetryManager,
+	msgreg eemi.MessageRegistry,
+	bus eh.EventBus,
+	dbmaint map[string]struct{},
+) func(eh.Event) {
 	return func(event eh.Event) {
 		update, ok := event.Data().(*UpdateTriggerCommandData)
 		if !ok {
@@ -480,7 +480,7 @@ func MakeHandlerUpdateTrigger(logger log.Logger, telemetryMgr *telemetryManager,
 		dbmaint[deleteOrphans] = struct{}{}
 
 		// Generate a "response" event that carries status back to initiator
-		respEvent, err := update.NewResponseEvent(updError)
+		respEvent, err := update.NewResponseEvent(msgreg, updError)
 		if err != nil {
 			logger.Crit("Error creating response event", "err", err, triggerDef, update.TriggerName)
 			return
@@ -497,7 +497,13 @@ func MakeHandlerUpdateTrigger(logger log.Logger, telemetryMgr *telemetryManager,
 	}
 }
 
-func MakeHandlerDeleteTrigger(logger log.Logger, telemetryMgr *telemetryManager, bus eh.EventBus, dbmaint map[string]struct{}) func(eh.Event) {
+func MakeHandlerDeleteTrigger(
+	logger log.Logger,
+	telemetryMgr *telemetryManager,
+	msgreg eemi.MessageRegistry,
+	bus eh.EventBus,
+	dbmaint map[string]struct{},
+) func(eh.Event) {
 	return func(event eh.Event) {
 		trigger, ok := event.Data().(*DeleteTriggerCommandData)
 		if !ok {
@@ -513,7 +519,7 @@ func MakeHandlerDeleteTrigger(logger log.Logger, telemetryMgr *telemetryManager,
 		dbmaint[deleteOrphans] = struct{}{} // set bit to start orphan delete next clock tick
 
 		// Generate a "response" event that carries status back to initiator
-		respEvent, err := trigger.NewResponseEvent(delError)
+		respEvent, err := trigger.NewResponseEvent(msgreg, delError)
 		if err != nil {
 			logger.Crit(respCreateError, "err", err, triggerDef, trigger.Name)
 			return
@@ -529,9 +535,12 @@ func MakeHandlerDeleteTrigger(logger log.Logger, telemetryMgr *telemetryManager,
 	}
 }
 
-// MR event handlers
-
-func MakeHandlerDeleteMR(logger log.Logger, telemetryMgr *telemetryManager, bus eh.EventBus) func(eh.Event) {
+func MakeHandlerDeleteMR(
+	logger log.Logger,
+	telemetryMgr *telemetryManager,
+	msgreg eemi.MessageRegistry,
+	bus eh.EventBus,
+) func(eh.Event) {
 	return func(event eh.Event) {
 		report, ok := event.Data().(*DeleteMRCommandData)
 		if !ok {
@@ -546,7 +555,7 @@ func MakeHandlerDeleteMR(logger log.Logger, telemetryMgr *telemetryManager, bus 
 		}
 
 		// Generate a "response" event that carries status back to initiator
-		respEvent, err := report.NewResponseEvent(delError)
+		respEvent, err := report.NewResponseEvent(msgreg, delError)
 		if err != nil {
 			logger.Crit(respCreateError, "err", err, "Report", report.Name)
 			return
@@ -556,7 +565,12 @@ func MakeHandlerDeleteMR(logger log.Logger, telemetryMgr *telemetryManager, bus 
 	}
 }
 
-func MakeHandlerGenReport(logger log.Logger, telemetryMgr *telemetryManager, bus eh.EventBus) func(eh.Event) {
+func MakeHandlerGenReport(
+	logger log.Logger,
+	telemetryMgr *telemetryManager,
+	msgreg eemi.MessageRegistry,
+	bus eh.EventBus,
+) func(eh.Event) {
 	return func(event eh.Event) {
 		report, ok := event.Data().(*metric.GenerateReportCommandData)
 		if !ok {
@@ -570,7 +584,7 @@ func MakeHandlerGenReport(logger log.Logger, telemetryMgr *telemetryManager, bus
 			logger.Crit("generate report", "err", reportError, reportDefinition, report.MRDName)
 		}
 
-		respEvent, err := report.NewResponseEvent(reportError)
+		respEvent, err := report.NewResponseEvent(msgreg, reportError)
 		if err != nil {
 			logger.Crit(respCreateError, "err", err, reportDefinition, report.MRDName, "ReportName", mrName)
 			return

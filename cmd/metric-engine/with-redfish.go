@@ -22,29 +22,29 @@ func init() {
 	optionalComponents = append([]func(log.Logger, *viper.Viper, busIntf) func(){
 		func(logger log.Logger, cfg *viper.Viper, d busIntf) func() {
 			redfish.RegisterEvents()
-			serverlist := createHTTPServerBookkeeper(logger)
-			addRedfishHandlers(logger, cfg, d, serverlist)
 			am3SvcN4, _ := am3.StartService(context.Background(), log.With(logger, "module", "Redfish_AM3"), "Redfish", d)
-			err := redfish.Startup(logger, cfg, am3SvcN4, d)
-			if err != nil {
-				panic("redfish startup init failed: " + err.Error())
-			}
+			cfg.SetDefault("redfish", "unix:/run/telemetryservice/http.socket")
+			rfListeners := cfg.GetStringSlice("redfish")
+			// Startup can block on message registry, so do it in the background
+			go func() {
+				err := redfish.Startup(logger, am3SvcN4, d)
+				if err != nil {
+					panic("redfish startup init failed: " + err.Error())
+				}
+				serverlist := createHTTPServerBookkeeper(logger)
+				addRedfishHandlers(logger, rfListeners, d, serverlist)
+			}()
 			return nil
 		}}, optionalComponents...)
 }
 
-func addRedfishHandlers(logger log.Logger, cfgMgr *viper.Viper, d am3.BusObjs, serverlist *httpcommon.ServerTracker) {
+func addRedfishHandlers(logger log.Logger, listenAddrs []string, d am3.BusObjs, serverlist *httpcommon.ServerTracker) {
 	logger.Crit("REDFISH ENABLED")
-	cfgMgr.SetDefault("redfish", "unix:/run/telemetryservice/http.socket")
 
-	listenAddrs := cfgMgr.GetStringSlice("redfish")
 	if len(listenAddrs) == 0 {
 		fmt.Fprintf(os.Stderr, "No REDFISH listeners configured! Use the 'redfish' YAML option to configure a listener!")
 		return
 	}
-
-	// hint to the runtime it can release this memory
-	cfgMgr = nil
 
 	RFS := redfish.NewRedfishServer(logger, d)
 

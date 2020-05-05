@@ -9,6 +9,7 @@ import (
 
 	eh "github.com/looplab/eventhorizon"
 
+	"github.com/superchalupa/sailfish/cmd/metric-engine/eemi"
 	"github.com/superchalupa/sailfish/cmd/metric-engine/response"
 )
 
@@ -45,10 +46,6 @@ func NewCommand(t eh.EventType) Command {
 	return Command{RequestID: eh.NewUUID(), ResponseType: t}
 }
 
-type getCRer interface {
-	getCR(context.Context, eh.UUID) *CommandResponse
-}
-
 func (cmd *Command) SetContext(ctx context.Context) {
 	cmd.requestCtx = ctx
 }
@@ -58,45 +55,27 @@ func (cmd *Command) NewStreamingResponse() (eh.Event, error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not create response: %w", err)
 	}
-	getcr, ok := data.(getCRer)
-	if !ok {
-		return nil, fmt.Errorf("internal programming error: response encoded in cmd wasn't a response type: %T -> %+v", data, data)
-	}
-
-	cr := getcr.getCR(cmd.requestCtx, cmd.RequestID)
-	cr.responseStatusHandler = cmd.responseStatusHandler
-	cr.responseHeaderHandler = cmd.responseHeaderHandler
-	cr.responseWriteHandler = cmd.responseWriteHandler
-
+	setupResponse(data, cmd)
 	return eh.NewEvent(cmd.ResponseType, data, time.Now()), nil
 }
 
-func (cmd *Command) NewResponseEvent(resp interface{}) (eh.Event, error) {
+func (cmd *Command) NewResponseEvent(msgreg eemi.MessageRegistry, resp interface{}) (eh.Event, error) {
 	data, err := eh.CreateEventData(cmd.ResponseType)
 	if err != nil {
 		return nil, fmt.Errorf("could not create response: %w", err)
 	}
-	getcr, ok := data.(getCRer)
-	if !ok {
-		return nil, fmt.Errorf("internal programming error: response encoded in cmd wasn't a response type: %T -> %+v", data, data)
-	}
-
-	cr := getcr.getCR(cmd.requestCtx, cmd.RequestID)
-	cr.responseStatusHandler = cmd.responseStatusHandler
-	cr.responseHeaderHandler = cmd.responseHeaderHandler
-	cr.responseWriteHandler = cmd.responseWriteHandler
+	cr := setupResponse(data, cmd)
 
 	// ===========================================================================
 	// this block should be a good start on getting good output for all success and error cases
 	status := HTTPStatusOk
-	mf := response.NewMessageFactory()
 
 	// if no resp given, return generic happy message
 	if resp == nil {
 		resp = response.NewResponse().
 			SetStatus(HTTPStatusOk).
-			AddPropertyExtendedInfo("", mf.NewMessage("BASE_OK", nil, nil)).
-			AddPropertyExtendedInfo("", mf.NewMessage("IDRAC_OK", nil, nil))
+			AddPropertyExtendedInfo("", eemi.NewEEMI(msgreg, "Base.Success", nil, nil)).
+			AddPropertyExtendedInfo("", eemi.NewEEMI(msgreg, "IDRAC.SYS413", nil, nil)) // IDRAC_OK
 	}
 
 	// If we got a response, but it isnt a "*response.Response", it's probably an
@@ -108,7 +87,7 @@ func (cmd *Command) NewResponseEvent(resp interface{}) (eh.Event, error) {
 		}
 		resp = response.NewResponse().
 			SetStatus(HTTPStatusBadRequest).
-			AddPropertyExtendedInfo("", mf.NewMessage("GENERAL_ERROR", []string{errStr}, nil))
+			AddPropertyExtendedInfo("", eemi.NewEEMI(msgreg, "IDRAC.GeneralError", []string{errStr}, nil))
 	}
 
 	type StatusGetter interface {
@@ -164,9 +143,24 @@ type CommandResponse struct {
 	responseWriteHandler  io.Writer
 }
 
-func (cr *CommandResponse) getCR(ctx context.Context, rID eh.UUID) *CommandResponse {
-	cr.RequestID = rID
-	cr.requestCtx = ctx
+type setuper interface {
+	setupResponse(*Command) *CommandResponse
+}
+
+func setupResponse(data eh.EventData, cmd *Command) *CommandResponse {
+	getcr, ok := data.(setuper)
+	if !ok {
+		return nil
+	}
+	return getcr.setupResponse(cmd)
+}
+
+func (cr *CommandResponse) setupResponse(cmd *Command) *CommandResponse {
+	cr.requestCtx = cmd.requestCtx
+	cr.RequestID = cmd.RequestID
+	cr.responseStatusHandler = cmd.responseStatusHandler
+	cr.responseHeaderHandler = cmd.responseHeaderHandler
+	cr.responseWriteHandler = cmd.responseWriteHandler
 	return cr
 }
 
