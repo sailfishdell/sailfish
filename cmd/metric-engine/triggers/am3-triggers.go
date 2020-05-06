@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"regexp"
@@ -27,7 +26,16 @@ const (
 	triggerUnsubscribeEvent eh.EventType = "Unsubscribe Triggers"
 	printSubscriberMaps     eh.EventType = "Print Subscriber Maps"
 
-	writeTimeout = 20 * time.Millisecond
+	writeTimeout       = 20 * time.Millisecond  // Subscriber pipe timeout
+	sleepTimeCPUBin    = 250 * time.Millisecond // CPU BIN file logic
+	totalCPUBinTimeout = 60 * time.Second       // CPU BIN wait timeout
+
+	subscribeStr      = "subscribe@" // Subscribe request prefix on named pipe
+	subscribeStrLen   = len(subscribeStr)
+	unsubscribeStr    = "unsubscribe@" // Unsubscribe request prefix on named pipe
+	unsubscribeStrLen = len(unsubscribeStr)
+
+	invalidEventStr = "handler got unexpected type of data event, skipping"
 )
 
 type busComponents interface {
@@ -120,8 +128,6 @@ func writeSubFile(logger log.Logger, activeSubs SubscriberMap, subFilePath strin
 	}
 }
 
-const invalidEventStr = "handler got unexpected type of data event, skipping"
-
 // Report generated am3 service notification handler
 func MakeHandlerReportGenerated(logger log.Logger, activeSubs map[string]*os.File,
 	bus eh.EventBus) func(eh.Event) {
@@ -134,7 +140,6 @@ func MakeHandlerReportGenerated(logger log.Logger, activeSubs map[string]*os.Fil
 
 		//send triggers to active subscribers
 		for k, subscriber := range activeSubs {
-			logger.Info("Report generated. Trigger subscribers.", "sub", k, "MRName", notify.MRName)
 			err := subscriber.SetWriteDeadline(time.Now().Add(writeTimeout))
 			if err != nil {
 				logger.Warn("Error setting write deadline for subscriber", "filename", k, "err", err)
@@ -212,9 +217,9 @@ func MakeHandlerPrintSubscribers(logger log.Logger, activeSubs map[string]*os.Fi
 	subFilePath string, bus eh.EventBus) func(eh.Event) {
 	return func(event eh.Event) {
 		//Print active subscriptions
-		fmt.Printf("active subscriber map size  - %d \n", len(activeSubs))
-		for k, fileHandle := range activeSubs {
-			fmt.Printf("active subscriber %s - %p \n", k, fileHandle)
+		logger.Info("Active subscriber MAP", "Length", len(activeSubs))
+		for k := range activeSubs {
+			logger.Info("Active subscriber MAP", "SUB", k)
 		}
 	}
 }
@@ -257,7 +262,7 @@ func setupEventHandlers(
 
 	//Subscription only for processing CPU registers
 	cpuIERRFile := cfg.GetString("triggers.CPURegisterBINFile")
-	err = am3Svc.AddEventHandler("Generate Metric Report", metric.GenerateReportCommandEvent, MakeHandlerSubscriberCPURegisters(logger, cpuIERRFile, bus))
+	err = am3Svc.AddEventHandler("Generate CPU Registers BIN", metric.GenerateReportCommandEvent, MakeHandlerSubscriberCPURegisters(logger, cpuIERRFile, bus))
 	return nil
 }
 
@@ -270,6 +275,7 @@ func MakeHandlerSubscriberCPURegisters(logger log.Logger, cpuIERRFile string, bu
 				event, "eventdata", event.Data())
 			return
 		}
+
 		if report.MRDName != "CPURegisters" {
 			return
 		}
@@ -277,9 +283,6 @@ func MakeHandlerSubscriberCPURegisters(logger log.Logger, cpuIERRFile string, bu
 		go CPURegisterFileHandling(logger, bus, cpuIERRFile)
 	}
 }
-
-const sleepTimeCPUBin = 250 * time.Millisecond
-const totalCPUBinTimeout = 60 * time.Second
 
 func CPURegisterFileHandling(logger log.Logger, bus eh.EventBus, cpubinfile string) {
 	i := int64(0)
@@ -311,13 +314,6 @@ func publishHelper(logger log.Logger, bus eh.EventBus, et eh.EventType, data eh.
 	evt.Wait()
 }
 
-const (
-	subscribeStr      = "subscribe@"
-	subscribeStrLen   = len(subscribeStr)
-	unsubscribeStr    = "unsubscribe@"
-	unsubscribeStrLen = len(unsubscribeStr)
-)
-
 func processPipeInput(logger log.Logger, bus eh.EventBus, scanText string) {
 	logger.Debug("Process command pipe request", "scantext", scanText)
 	switch {
@@ -337,7 +333,7 @@ func processPipeInput(logger log.Logger, bus eh.EventBus, scanText string) {
 
 	default:
 		reportDefList := strings.Split(scanText, ",")
-		logger.Info("LCL triggered report gen", "reportDefList", reportDefList)
+		logger.Info("LCL triggered report generation", "reportDefList", reportDefList)
 		for _, name := range reportDefList {
 			evt, err := metric.NewRequestReportCommand(name)
 			if err != nil {
