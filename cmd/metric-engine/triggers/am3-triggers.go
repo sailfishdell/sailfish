@@ -218,7 +218,7 @@ func MakeHandlerPrintSubscribers(logger log.Logger, activeSubs map[string]*os.Fi
 	return func(event eh.Event) {
 		//Print active subscriptions
 		logger.Info("Active subscriber MAP", "Length", len(activeSubs))
-		for k, _ := range activeSubs {
+		for k := range activeSubs {
 			logger.Info("Active subscriber MAP", "SUB", k)
 		}
 	}
