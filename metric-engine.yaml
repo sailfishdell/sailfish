@@ -1708,7 +1708,6 @@ createdb:
                   select JSON
                   from MetricValueByReport as MVR
                   where MVR.Name=MR.Name
-                    order by MVR.Timestamp DESC
                     limit 2400
                   ) AS a ),  ' "MetricValues":  [], "MetricValues@odata.count":  0 ')
           || '}'
