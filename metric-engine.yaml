@@ -2212,3 +2212,5 @@ logs:
           level: "info"
         - name: "ReportGeneration"
           level: "info"
+        - name: "trigger"
+          level: "info"
