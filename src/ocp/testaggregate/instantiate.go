@@ -17,6 +17,7 @@ import (
 
 	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/looplab/eventwaiter"
+	"github.com/superchalupa/sailfish/src/ocp/am3"
 	"github.com/superchalupa/sailfish/src/ocp/model"
 	"github.com/superchalupa/sailfish/src/ocp/view"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
@@ -46,10 +47,6 @@ type Service struct {
 	serviceGlobalsMu            sync.RWMutex
 }
 
-type am3Service interface {
-	AddEventHandler(name string, et eh.EventType, fn func(eh.Event)) error
-}
-
 const instantiate = eh.EventType("instantiate")
 const instantiateResponse = eh.EventType("instantiate-response")
 
@@ -66,7 +63,7 @@ type InstantiateResponseData struct {
 	Err   error
 }
 
-func New(logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, d *domain.DomainObjects, am3Svc am3Service) *Service {
+func New(logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, d *domain.DomainObjects, am3Svc am3.Service) *Service {
 	ret := &Service{
 		logger:                      logger,
 		d:                           d,

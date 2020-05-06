@@ -38,7 +38,7 @@ func getValidString(namemap, params map[string]interface{}, srcName, paramName s
 	return true
 }
 
-func InitTask(logger log.Logger, instantiateSvc *testaggregate.Service, am3Svc *am3.Service, ch eh.CommandHandler, ctx context.Context) {
+func InitTask(logger log.Logger, instantiateSvc *testaggregate.Service, am3Svc am3.Service, ch eh.CommandHandler, ctx context.Context) {
 
 	//TODO: figure out what exactly updating the args should actually do
 	/*awesome_mapper2.AddFunction("update_task_args", func (args ... interface{}) (interface{}, error) {

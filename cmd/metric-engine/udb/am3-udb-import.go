@@ -21,6 +21,7 @@ import (
 	"github.com/superchalupa/sailfish/cmd/metric-engine/telemetry"
 	"github.com/superchalupa/sailfish/src/fileutils"
 	"github.com/superchalupa/sailfish/src/looplab/event"
+	"github.com/superchalupa/sailfish/src/ocp/am3"
 
 	log "github.com/superchalupa/sailfish/src/log"
 )
@@ -47,10 +48,6 @@ const (
 
 type busComponents interface {
 	GetBus() eh.EventBus
-}
-
-type eventHandlingService interface {
-	AddEventHandler(string, eh.EventType, func(eh.Event)) error
 }
 
 /*
@@ -85,8 +82,9 @@ func attachDB(database *sqlx.DB, dbfile string, as string) error {
 	return nil
 }
 
+// nolint: funlen  // will address this later in patch series
 // Startup will attach event handlers to handle import UDB import
-func Startup(logger log.Logger, cfg *viper.Viper, am3Svc eventHandlingService, d busComponents) (func(), error) {
+func Startup(logger log.Logger, cfg *viper.Viper, am3Svc am3.Service, d busComponents) (func(), error) {
 	// setup programatic defaults. can be overridden in config file
 	cfg.SetDefault("udb.udbdatabasepath",
 		"file:/run/unifieddatabase/DMLiveObjectDatabase.db?cache=shared&_foreign_keys=off&mode=ro&_busy_timeout=1000&nolock=1&cache=shared")

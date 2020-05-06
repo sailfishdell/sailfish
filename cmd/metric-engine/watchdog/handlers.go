@@ -9,11 +9,8 @@ import (
 	eh "github.com/looplab/eventhorizon"
 	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/looplab/event"
+	"github.com/superchalupa/sailfish/src/ocp/am3"
 )
-
-type eventHandlingService interface {
-	AddEventHandler(string, eh.EventType, func(eh.Event)) error
-}
 
 const (
 	WDEvent              = eh.EventType("Watchdog")
@@ -29,7 +26,7 @@ type busComponents interface {
 }
 
 // StartWatchdogHandling will attach event handlers to ping systemd watchdog from AM3 for watchdog events
-func StartWatchdogHandling(logger log.Logger, am3Svc eventHandlingService, d busComponents) error {
+func StartWatchdogHandling(logger log.Logger, am3Svc am3.Service, d busComponents) error {
 	s := 0
 	eh.RegisterEventData(WDEvent, func() eh.EventData { s++; return &WDEventData{Seq: s} })
 

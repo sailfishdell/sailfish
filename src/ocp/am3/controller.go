@@ -15,28 +15,34 @@ const (
 	ShutdownAM3       = eh.EventType("AM3Shutdown")
 )
 
+type EventHandler func(eh.Event)
+type Service interface {
+	AddEventHandler(string, eh.EventType, EventHandler) error
+	AddMultiHandler(string, eh.EventType, EventHandler) error
+}
+
 type ConfigureAM3EventData struct {
 	serviceName string
 	name        string
 	et          eh.EventType
-	fn          func(eh.Event)
+	fn          EventHandler
 }
 
 type ShutdownAM3Data struct {
 	serviceName string
 }
 
-type Service struct {
+type AwesomeMapper3 struct {
 	logger        log.Logger
 	eb            eh.EventBus
-	eventhandlers map[eh.EventType]map[string]func(eh.Event)
-	multihandlers map[eh.EventType]map[string]func(eh.Event)
+	eventhandlers map[eh.EventType]map[string]EventHandler
+	multihandlers map[eh.EventType]map[string]EventHandler
 	handledEvents map[eh.EventType]struct{}
 	serviceName   string
 	listener      *eventwaiter.MultiEventListener
 }
 
-func (s *Service) AddEventHandler(name string, et eh.EventType, fn func(eh.Event)) error {
+func (s *AwesomeMapper3) AddEventHandler(name string, et eh.EventType, fn EventHandler) error {
 	return event.PublishAndWaitErr(
 		context.Background(),
 		s.eb,
@@ -45,7 +51,7 @@ func (s *Service) AddEventHandler(name string, et eh.EventType, fn func(eh.Event
 	)
 }
 
-func (s *Service) AddMultiHandler(name string, et eh.EventType, fn func(eh.Event)) error {
+func (s *AwesomeMapper3) AddMultiHandler(name string, et eh.EventType, fn EventHandler) error {
 	return event.PublishAndWaitErr(
 		context.Background(),
 		s.eb,
@@ -54,7 +60,7 @@ func (s *Service) AddMultiHandler(name string, et eh.EventType, fn func(eh.Event
 	)
 }
 
-func (s *Service) Shutdown() error {
+func (s *AwesomeMapper3) Shutdown() error {
 	return event.PublishAndWaitErr(
 		context.Background(),
 		s.eb,
@@ -68,51 +74,55 @@ type BusObjs interface {
 	GetWaiter() *eventwaiter.EventWaiter
 }
 
-func (s *Service) inlineAddHandler(config *ConfigureAM3EventData) {
-	if config != nil && config.serviceName == s.serviceName {
-		h, ok := s.eventhandlers[config.et]
-		if !ok {
-			h = map[string]func(eh.Event){}
-		}
-		h[config.name] = config.fn
-		s.eventhandlers[config.et] = h
+func (s *AwesomeMapper3) inlineAddHandler(config *ConfigureAM3EventData) {
+	if config == nil && config.serviceName != s.serviceName {
+		return
 	}
+	h, ok := s.eventhandlers[config.et]
+	if !ok {
+		h = map[string]EventHandler{}
+	}
+	h[config.name] = config.fn
+	s.eventhandlers[config.et] = h
 }
-func (s *Service) inlineAddMultiHandler(config *ConfigureAM3EventData) {
-	if config != nil && config.serviceName == s.serviceName {
-		h, ok := s.multihandlers[config.et]
-		if !ok {
-			h = map[string]func(eh.Event){}
-		}
-		h[config.name] = config.fn
-		s.multihandlers[config.et] = h
+func (s *AwesomeMapper3) inlineAddMultiHandler(config *ConfigureAM3EventData) {
+	if config == nil && config.serviceName != s.serviceName {
+		return
 	}
+	h, ok := s.multihandlers[config.et]
+	if !ok {
+		h = map[string]EventHandler{}
+	}
+	h[config.name] = config.fn
+	s.multihandlers[config.et] = h
 }
 
-func (s *Service) inlineProcessEvent(event eh.Event) {
-	t := event.EventType()
+func (s *AwesomeMapper3) inlineProcessEvent(evt eh.Event) {
+	t := evt.EventType()
 	for _, fn := range s.eventhandlers[t] {
-		for _, eventData := range event.Data().([]eh.EventData) {
-			fn(eh.NewEvent(t, eventData, event.Timestamp()))
+		for _, eventData := range evt.Data().([]eh.EventData) {
+			fn(eh.NewEvent(t, eventData, evt.Timestamp()))
 		}
 	}
 
 	for _, fn := range s.multihandlers[t] {
-		fn(event)
+		fn(evt)
 	}
 }
 
-func (s *Service) inlineCheckEvent(ev eh.Event) bool {
+func (s *AwesomeMapper3) inlineCheckEvent(evt eh.Event) (ret bool) {
 	// normal case first: hash lookup to see if we process this event, should be the fastest way
-	typ := ev.EventType()
+	typ := evt.EventType()
 	if _, ok := s.handledEvents[typ]; ok {
 		// self configure... no locks! yay!
 		if typ == ConfigureAM3Event || typ == ConfigureAM3Multi {
-			dataArray, _ := ev.Data().([]eh.EventData)
+			dataArray, _ := evt.Data().([]eh.EventData)
 			for _, data := range dataArray {
-				if d, ok := data.(*ConfigureAM3EventData); ok && d.serviceName == s.serviceName {
-					s.handledEvents[d.et] = struct{}{}
+				d, ok := data.(*ConfigureAM3EventData)
+				if !ok || d.serviceName != s.serviceName {
+					return false
 				}
+				s.handledEvents[d.et] = struct{}{}
 			}
 		}
 		return true
@@ -120,15 +130,15 @@ func (s *Service) inlineCheckEvent(ev eh.Event) bool {
 	return false
 }
 
-func StartService(ctx context.Context, logger log.Logger, name string, d BusObjs) (*Service, error) {
-	var ret *Service
-	ret = &Service{
+func StartService(ctx context.Context, logger log.Logger, name string, d BusObjs) (*AwesomeMapper3, error) {
+	var ret *AwesomeMapper3
+	ret = &AwesomeMapper3{
 		serviceName:   name,
 		logger:        log.With(logger, "module", "am3"),
 		eb:            d.GetBus(),
 		handledEvents: map[eh.EventType]struct{}{ConfigureAM3Event: {}, ConfigureAM3Multi: {}},
-		multihandlers: map[eh.EventType]map[string]func(eh.Event){},
-		eventhandlers: map[eh.EventType]map[string]func(eh.Event){
+		multihandlers: map[eh.EventType]map[string]EventHandler{},
+		eventhandlers: map[eh.EventType]map[string]EventHandler{
 			ConfigureAM3Event: {
 				// These functions are run from inside the event loop to configure
 				// things.  No need for locks as everything is guaranteed to be
