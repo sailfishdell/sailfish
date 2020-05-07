@@ -1417,7 +1417,7 @@ createdb:
         ShortDesc         TEXT not null default '',
         LongDesc          TEXT not null default '',
         Enabled           BOOLEAN not null default false,
-        AppendLimit       INTEGER not null default 24000,
+        AppendLimit       INTEGER not null default 2400,
         Type              TEXT not null default 'OnRequest',           -- type of report: 'Periodic', 'OnChange', 'OnRequest'
         SuppressDups      BOOLEAN not null default true,
         Actions           TEXT not null default '[]',                  -- json array of options: 'LogToMetricReportsCollection', 'RedfishEvent'
@@ -1709,7 +1709,7 @@ createdb:
                   from MetricValueByReport as MVR
                   where MVR.Name=MR.Name
                     order by MVR.Timestamp DESC
-                    limit 24000
+                    limit 2400
                   ) AS a ),  ' "MetricValues":  [], "MetricValues@odata.count":  0 ')
           || '}'
         ) as root,
@@ -1755,7 +1755,7 @@ createdb:
           ' "Name": "' ||  ifnull(shortdesc, name || ' metric report definition') || '",' ||
           ' "Description": "' ||  ifnull(LongDesc, name || ' metric report definition') || '",' ||
             -- Hardcoded/fixed due to limitations in SQLITE query engine. LIMIT must be a constant
-          ' "AppendLimit": 24000,' ||
+          ' "AppendLimit": 2400,' ||
           ' "MetricReportDefinitionEnabled": ' || case Enabled when 1 then json('true') else json('false') end || ',' ||
           ' "MetricReportDefinitionType": "' || Type || '",' ||
           ' "MetricReportDefinitionType@Redfish.AllowableValues": ' || json_array('Periodic', 'OnChange', 'OnRequest') || ', ' ||
