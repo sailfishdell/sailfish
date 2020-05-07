@@ -336,6 +336,7 @@ func makeTriggerLinksPatch(trgList string) (json.RawMessage, error) {
 //# iDRAC.Embedded.1#TelemetryFPGASensor.1#ReportTriggers    (waiting for the MRD syntax for Rsyslog)
 
 func MakeHandlerLegacyAttributeSync(logger log.Logger, importMgr *importManager, bus eh.EventBus, configSync *ConfigSync) func(eh.Event) {
+	cfgpopCount := 0
 	return func(event eh.Event) {
 		notify, ok := event.Data().(*changeNotify)
 		if !ok {
@@ -350,19 +351,57 @@ func MakeHandlerLegacyAttributeSync(logger log.Logger, importMgr *importManager,
 
 		// Step 2: Is this a tblEnumAttribute change, and does rowid match something we know about
 		keyname := ""
+		sqlForKey := ""
 		ok = false
 		switch notify.Table {
 		case "TblEnumAttribute":
 			keyname, ok = configSync.enumEntries[notify.Rowid]
+			sqlForKey = "select Key from TblEnumAttribute where ROWID = ?;"
 		case "TblIntAttribute":
 			keyname, ok = configSync.intEntries[notify.Rowid]
+			sqlForKey = "select Key from TblIntAttribute where ROWID = ?;"
 		case "TblStrAttribute":
 			keyname, ok = configSync.strEntries[notify.Rowid]
+			sqlForKey = "select Key from TblStrAttribute where ROWID = ?;"
+		default:
+			return
 		}
 
-		// step 3: exit if it's not something we found above
-		if !ok {
+		// step 3: exit if it's not something we found above and we know our cache of AR is up to date
+		if !ok && cfgpopCount > 2000 {
 			return
+		}
+
+		if !ok {
+			// so, after boot while cfgpop is still populating cfgdb entries into dm
+			// and then over to UDB we might get new AR entries we didnt see in our
+			// initial scan.  We dont want to waste time on this during normal
+			// runtime as it will impact our CPU usage.
+			//
+			// strategy is to count Attribute changes and once we hit a "reasonable"
+			// number, we'll know that cfgpop is done and stop this nonsense. There are probably other ways
+			cfgpopCount++
+
+			err := configSync.db.Get(&keyname, sqlForKey, &notify.Rowid)
+			if err != nil {
+				return
+			}
+
+			keys := strings.Split(keyname, "#")
+			switch keys[2] {
+			case enableTelemetry, reportInterval, reportTriggers:
+			default:
+				return
+			}
+
+			switch notify.Table {
+			case "TblEnumAttribute":
+				configSync.enumEntries[notify.Rowid] = keyname
+			case "TblIntAttribute":
+				configSync.intEntries[notify.Rowid] = keyname
+			case "TblStrAttribute":
+				configSync.strEntries[notify.Rowid] = keyname
+			}
 		}
 
 		// Step 4: Generate a "UpdateMRDCommandEvent" event
