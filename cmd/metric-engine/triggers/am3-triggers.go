@@ -16,10 +16,9 @@ import (
 
 	"github.com/superchalupa/sailfish/cmd/metric-engine/metric"
 	"github.com/superchalupa/sailfish/src/fileutils"
+	log "github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/looplab/event"
 	"github.com/superchalupa/sailfish/src/ocp/am3"
-
-	log "github.com/superchalupa/sailfish/src/log"
 )
 
 const (
@@ -295,20 +294,7 @@ func CPURegisterFileHandling(logger log.Logger, bus eh.EventBus, cpubinfile stri
 		time.Sleep(sleepTimeCPUBin)
 	}
 
-	publishHelper(logger, bus, metric.ReportGenerated, &metric.ReportGeneratedData{MRDName: "CPURegisters", MRName: "CPURegisters"})
-	return
-}
-
-// publishHelper will log/eat the error from PublishEvent since we can't do anything useful with it
-func publishHelper(logger log.Logger, bus eh.EventBus, et eh.EventType, data eh.EventData) {
-	evt := event.NewSyncEvent(et, data, time.Now())
-	evt.Add(1)
-	err := bus.PublishEvent(context.Background(), evt)
-	if err != nil {
-		logger.Crit("Error publishing event. This should never happen!", "err", err)
-		return
-	}
-	evt.Wait()
+	event.Publish(context.Background(), bus, metric.ReportGenerated, &metric.ReportGeneratedData{MRDName: "CPURegisters", MRName: "CPURegisters"})
 }
 
 func processPipeInput(logger log.Logger, bus eh.EventBus, scanText string) {
@@ -317,16 +303,16 @@ func processPipeInput(logger log.Logger, bus eh.EventBus, scanText string) {
 	case strings.HasPrefix(scanText, subscribeStr):
 		subFileName := scanText[subscribeStrLen:]
 		logger.Info("Subscription request", "subFileName", subFileName)
-		publishHelper(logger, bus, triggerSubscribeEvent, &subscriptionData{namedPipeName: subFileName})
+		event.PublishAndWait(context.Background(), bus, triggerSubscribeEvent, &subscriptionData{namedPipeName: subFileName})
 
 	case strings.HasPrefix(scanText, unsubscribeStr):
 		subFileName := scanText[unsubscribeStrLen:]
 		logger.Info("Unsubscription request", "subFileName", subFileName)
-		publishHelper(logger, bus, triggerUnsubscribeEvent, &subscriptionData{namedPipeName: subFileName})
+		event.PublishAndWait(context.Background(), bus, triggerUnsubscribeEvent, &subscriptionData{namedPipeName: subFileName})
 
 	case strings.HasPrefix(scanText, "printInternalMaps"):
 		logger.Info("Print internal maps")
-		publishHelper(logger, bus, printSubscriberMaps, nil)
+		event.PublishAndWait(context.Background(), bus, printSubscriberMaps, nil)
 
 	default:
 		reportDefList := strings.Split(scanText, ",")
@@ -337,7 +323,7 @@ func processPipeInput(logger log.Logger, bus eh.EventBus, scanText string) {
 				logger.Warn("Error creating report request command", "err", err)
 				continue
 			}
-			publishHelper(logger, bus, evt.EventType(), evt.Data())
+			event.PublishAndWait(context.Background(), bus, evt.EventType(), evt.Data())
 		}
 	}
 }
