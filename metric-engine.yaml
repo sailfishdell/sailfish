@@ -1353,6 +1353,18 @@ internal:
         FROM Trigger, TriggerToMRD
         WHERE Trigger.ID = TriggerID AND MetricReportDefinitionID = ?
 
+    mrdlist_by_trgid: |
+      SELECT
+        group_concat(Name, " ")
+        FROM MetricReportDefinition, TriggerToMRD
+        WHERE MetricReportDefinition.ID = MetricReportDefinitionID AND TriggerID = ?
+
+    evtlist_by_trgid: |
+      SELECT
+        group_concat(EemiID, " ")
+        FROM EventTriggers
+        WHERE TriggerID = ?
+
     find_trg_by_name: |
       SELECT
         ID,

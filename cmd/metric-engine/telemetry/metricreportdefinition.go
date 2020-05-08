@@ -411,11 +411,11 @@ func (factory *telemetryManager) updateMRD(reportDef string, updates json.RawMes
 
 		// Update Trigger Links
 		// make sure if this patch has "Links" - most of AR sync updates come without "Links" and we should
-		//  remove triggers in that case.
+		//  not remove triggers in that case.
 		//  This to distinguish user trying to remove triggers with no triggers in Links vs Links not
 		//  being part of the patch json
 		var patchMap map[string]interface{}
-		json.Unmarshal(updates, &patchMap)
+		_ = json.Unmarshal(updates, &patchMap)
 		if _, foundLinks := patchMap["Links"]; foundLinks {
 			err = populateMRDToTrigger(factory, tx, newMRD.MetricReportDefinitionData, mrd.ID, true) // update
 			if err != nil {
@@ -721,6 +721,30 @@ func (factory *telemetryManager) updateTrigger(triggerId string, updates json.Ra
 			return err
 		}
 		newTrigger.RedfishID = triggerId // ensure name stays the same... should be no way this isn't the same, but lets be sure.
+
+		// if "Links" provided in the patch replace them else get existing ones
+		var patchMap map[string]interface{}
+		_ = json.Unmarshal(updates, &patchMap)
+		if _, foundLinks := patchMap["Links"]; !foundLinks {
+			// Update newTrigger.MRDList with existing
+			var mrdListStr sql.NullString
+			err = factory.getSQLXTx(tx, "mrdlist_by_trgid").Get(&mrdListStr, trg.ID)
+			if err != nil {
+				return xerrors.Errorf("error getting MRDList for Trigger(%s): %s --ERR--> %w", triggerId, updates, err)
+			}
+			newTrigger.MRDList = strings.Split(mrdListStr.String, " ")
+		}
+
+		// if "EventTriggers" provided in the patch replace them else get existing ones
+		if _, foundET := patchMap["EventTriggers"]; !foundET {
+			// Update newTrigger.EventTriggers with existing
+			var etListStr sql.NullString
+			err = factory.getSQLXTx(tx, "evtlist_by_trgid").Get(&etListStr, trg.ID)
+			if err != nil {
+				return xerrors.Errorf("error getting EventTriggers for Trigger(%s): %s --ERR--> %w", triggerId, updates, err)
+			}
+			newTrigger.EventTriggers = strings.Split(etListStr.String, " ")
+		}
 
 		// step 3: validate result
 		err = validateTrigger(newTrigger.TriggerData)

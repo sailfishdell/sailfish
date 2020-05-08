@@ -58,6 +58,8 @@ func Handler(ctx context.Context, logger log.Logger, cfg *viper.Viper, am3Svc am
 	ch := make(chan persistMeta, persistChanLen)
 	pmrdDir := cfg.GetString("persistence.topsavedir") + mrdDir
 	pROmrdDir := cfg.GetString("persistence.topimportonlydir") + mrdDir
+	ptriggerDir := cfg.GetString("persistence.topsavedir") + trigDir
+	pROtriggerDir := cfg.GetString("persistence.topimportonlydir") + trigDir
 
 	for _, i := range []struct {
 		am3name    string
@@ -70,6 +72,9 @@ func Handler(ctx context.Context, logger log.Logger, cfg *viper.Viper, am3Svc am
 		{"Add MRD", telemetry.AddMRDResponseEvent, pmrdDir, "", "", SAVE},
 		{"Update MRD", telemetry.UpdateMRDResponseEvent, pmrdDir, "", "", SAVE},
 		{"Delete MRD", telemetry.DeleteMRDResponseEvent, pmrdDir, pROmrdDir, telemetry.AddMRDCommandEvent, DELETE},
+		{"Add Trigger", telemetry.AddTriggerResponseEvent, ptriggerDir, "", "", SAVE},
+		{"Update Trigger", telemetry.UpdateTriggerResponseEvent, ptriggerDir, "", "", SAVE},
+		{"Delete Trigger", telemetry.DeleteTriggerResponseEvent, ptriggerDir, pROtriggerDir, telemetry.AddTriggerCommandEvent, DELETE},
 	} {
 		err := am3Svc.AddEventHandler(i.am3name, i.eventType, MakeHandlerAddToChan(logger, ch, i.saveDir, i.bkupDir, i.recovType, i.jsonAction))
 		if err != nil {

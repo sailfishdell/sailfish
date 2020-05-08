@@ -424,16 +424,16 @@ func MakeHandlerAddTrigger(
 
 		addError := telemetryMgr.addTrigger(trigger.TriggerData)
 		if addError != nil {
-			logger.Crit("Failed to create the Trigger", "Name", trigger.Name, "err", addError)
+			logger.Crit("Failed to create the Trigger", "Id", trigger.RedfishID, "err", addError)
 		}
 
 		// Generate a "response" event that carries status back to initiator
 		respEvent, err := trigger.NewResponseEvent(msgreg, addError)
 		if err != nil {
-			logger.Crit(respCreateError, "err", err, triggerDef, trigger.Name)
+			logger.Crit(respCreateError, "err", err, triggerDef, trigger.RedfishID)
 			return
 		}
-		trg := trgPath + trigger.Name
+		trg := trgPath + trigger.RedfishID
 
 		r, ok := respEvent.Data().(urisetter)
 		if ok {
@@ -475,10 +475,10 @@ func MakeHandlerUpdateTrigger(
 			return
 		}
 
-		mrd := mrdPath + update.TriggerName
+		trg := trgPath + update.TriggerName
 		r, ok := respEvent.Data().(urisetter)
 		if ok {
-			r.SetURI(mrd)
+			r.SetURI(trg)
 		}
 
 		// wont actually wait since event is not sync
@@ -514,10 +514,10 @@ func MakeHandlerDeleteTrigger(
 			return
 		}
 
-		mrd := mrdPath + trigger.Name
+		trg := trgPath + trigger.Name
 		r, ok := respEvent.Data().(urisetter)
 		if ok {
-			r.SetURI(mrd)
+			r.SetURI(trg)
 		}
 
 		// wont actually wait since event is not sync
