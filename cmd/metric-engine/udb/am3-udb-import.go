@@ -393,7 +393,8 @@ func MakeHandlerLegacyAttributeSync(logger log.Logger, importMgr *importManager,
 		}
 
 		// step 3: exit if it's not something we found above and we know our cache of AR is up to date
-		if !ok && cfgpopCount > 2000 {
+		// duplicate ar entries are getting sent up.  TODO lower counter after more diagnostics
+		if !ok && cfgpopCount > 15000 {
 			return
 		}
 
