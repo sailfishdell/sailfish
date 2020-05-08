@@ -237,7 +237,7 @@ func Import(logger log.Logger, cfg *viper.Viper, bus eh.EventBus) error {
 	}{
 		{"MetricDefinition", importdir + mdDir, "", telemetry.AddMDCommandEvent},
 		{"MetricReportDefinition", savedir + mrdDir, importdir + mrdDir, telemetry.AddMRDCommandEvent},
-		{"Trigger", importdir + trigDir, "", telemetry.CreateTriggerCommandEvent},
+		{"Trigger", importdir + trigDir, "", telemetry.AddTriggerCommandEvent},
 	}
 
 	// strategy: this process *has* to succeed for md and triggers. If it does not, return error and we panic.
