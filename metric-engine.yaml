@@ -1864,14 +1864,26 @@ createdb:
       CREATE VIEW MetricReportExtendedInfo_JSON as
         select
           json_object(
-            'MetricReportDefinitionEnabled', (
-              select
-                Enabled
-              where Hidden != true
-            )
+            'error', json_object(
+              '@Message.ExtendedInfo', '[' || json_object(
+                'Message', 'Unable to generate the telemetry report because the telemetry report is disabled.',
+                'MessageArgs', '[]',
+                'MessageArgs@odata.count', 0,
+                'MessageId', 'IDRAC.1.6.SYS462',
+                'RelatedProperties', '[]',
+                'RelatedProperties@odata.count', 0,
+                'Resolution', 'Enable the Telemetry report . For more information about enabling Telemetry report on 15G and later PowerEdge servers, see the iDRAC User Guide and RACADM CLI Guide available on the support site.',
+                'Severity', 'Warning'
+              )
+            ) || ']',
+            'code','Base.1.2.GeneralError',
+            'message','A general error has occurred. See ExtendedInfo for more information'
           ) as root,
+          400 as status,
           '/redfish/v1/TelemetryService/MetricReports/' || Name as [@odata.id]
-        from MetricReportDefinition WHERE Enabled != true
+        from MetricReportDefinition
+           WHERE (Enabled != true) AND
+                 (Hidden  != true)
 
   - |
       DROP VIEW IF EXISTS TelemetryService_JSON;
@@ -1907,25 +1919,25 @@ createdb:
       -- This is the table that creates a uniform table name to gather *any* metric report, regardless of type
       DROP VIEW IF EXISTS JSON;
       CREATE VIEW JSON as
-        select root, [@odata.id] from MetricReportCollection_JSON
+        select 200 as status, root, [@odata.id] from MetricReportCollection_JSON
           UNION ALL
-        select root, [@odata.id] from MetricReport_JSON
+        select 200 as status, root, [@odata.id] from MetricReport_JSON
           UNION ALL
-        select root, [@odata.id] from MetricReportDefinitionCollection_JSON
+        select 200 as status, root, [@odata.id] from MetricReportDefinitionCollection_JSON
           UNION ALL
-        select root, [@odata.id] from MetricReportDefinition_JSON
+        select 200 as status, root, [@odata.id] from MetricReportDefinition_JSON
           UNION ALL
-        select root, [@odata.id] from MetricDefinitionCollection_JSON
+        select 200 as status, root, [@odata.id] from MetricDefinitionCollection_JSON
           UNION ALL
-        select root, [@odata.id] from MetricDefinition_JSON
+        select 200 as status, root, [@odata.id] from MetricDefinition_JSON
           UNION ALL
-        select root, [@odata.id] from TelemetryService_JSON
+        select 200 as status, root, [@odata.id] from TelemetryService_JSON
           UNION ALL
-        select root, [@odata.id] from TriggerCollection_JSON
+        select 200 as status, root, [@odata.id] from TriggerCollection_JSON
           UNION ALL
-        select root, [@odata.id] from Trigger_JSON
+        select 200 as status, root, [@odata.id] from Trigger_JSON
           UNION ALL
-        select root, [@odata.id] from MetricReportExtendedInfo_JSON
+        select        status, root, [@odata.id] from MetricReportExtendedInfo_JSON
 
 # Backwards compat stuff to get the fcgi_rfsql to work. Drop the tables in a separate statement because it can error out (and be ignored)
   - |
