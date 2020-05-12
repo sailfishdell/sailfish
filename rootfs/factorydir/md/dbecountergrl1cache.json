@@ -1,0 +1,12 @@
+{ 
+    "@odata.type": "#MetricDefinition.v1_0_2.MetricDefinition",
+    "Id": "DBECounterGRL1Cache",
+    "Name": "GR Memory Single Double Bit Error Counter L1 Cache Metric Definition",
+    "Description": "Double-bit errors from  L1 cache in Graphic Device (GR) memory",
+    "MetricType": "Counter",
+    "MetricDataType": "Integer",
+    "Accuracy": 0.0,
+    "SensingInterval": "PT600S",
+    "@odata.context": "/redfish/v1/$metadata#MetricDefinition.MetricDefinition",
+    "@odata.id": "/redfish/v1/TelemetryService/MetricDefinitions/DBECounterGRL1Cache"
+} 

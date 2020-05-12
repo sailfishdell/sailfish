@@ -45,8 +45,8 @@ func InitializeApplicationLogging(logCfgFile string) (logger *MyLogger) {
 	}
 
 	// set search paths for configs
-	logCfg.AddConfigPath("/etc/")
 	logCfg.AddConfigPath(".")
+	logCfg.AddConfigPath("/etc/")
 
 	if err := logCfg.ReadInConfig(); err == nil {
 		fmt.Println("log15adapter: Using config file:", logCfg.ConfigFileUsed())
@@ -72,12 +72,21 @@ func (l *MyLogger) ActivateConfigWatcher(logCfg *viper.Viper) {
 }
 
 type LoggingConfig struct {
-	Enabled         bool
+	ModulesToEnable []map[string]string
 	Level           string
 	FileName        string
+	Enabled         bool
 	PrintFunction   bool
 	PrintFile       bool
-	ModulesToEnable []map[string]string
+}
+
+func defaultLogConfig() []LoggingConfig {
+	return []LoggingConfig{{
+		Enabled:       true,
+		Level:         "info",
+		PrintFunction: true,
+		PrintFile:     true,
+	}}
 }
 
 func (l *MyLogger) SetupLogHandlersFromConfig(logCfg *viper.Viper) {
@@ -90,12 +99,7 @@ func (l *MyLogger) SetupLogHandlersFromConfig(logCfg *viper.Viper) {
 
 	if len(LogConfig) == 0 {
 		log.Crit("Setting default config")
-		LogConfig = []LoggingConfig{{
-			Enabled:       true,
-			Level:         "info",
-			PrintFunction: true,
-			PrintFile:     true,
-		}}
+		LogConfig = defaultLogConfig()
 	}
 
 	topLevelHandlers := []log.Handler{}
@@ -104,58 +108,9 @@ func (l *MyLogger) SetupLogHandlersFromConfig(logCfg *viper.Viper) {
 			continue
 		}
 
-		var outputHandler log.Handler
-		switch path := onecfg.FileName; path {
-		case "":
-			fallthrough
-		case "/dev/stderr":
-			outputHandler = log.StreamHandler(os.Stderr, log.TerminalFormat())
-		case "/dev/stdout":
-			outputHandler = log.StreamHandler(os.Stdout, log.TerminalFormat())
-		default:
-			outputHandler = log.Must.FileHandler(path, log.LogfmtFormat())
-		}
+		handler := setupOneHandler(onecfg)
 
-		if onecfg.PrintFile {
-			outputHandler = log.CallerFileHandler(outputHandler)
-		}
-		if onecfg.PrintFunction {
-			outputHandler = log.CallerFuncHandler(outputHandler)
-		}
-
-		wrappedOut := newOrHandler(outputHandler)
-
-		handlers := []log.Handler{}
-
-		loglvl, err := log.LvlFromString(onecfg.Level)
-		if err == nil {
-			handlers = append(handlers, log.LvlFilterHandler(loglvl, wrappedOut))
-		}
-
-		for _, m := range onecfg.ModulesToEnable {
-			name, ok := m["name"]
-			if !ok {
-				l.Warn("Nonexistent name for config", "m", m)
-				continue
-			}
-			handler := log.MatchFilterHandler("module", name, wrappedOut)
-
-			level, ok := m["level"]
-			if ok {
-				loglvl, err := log.LvlFromString(level)
-				if err == nil {
-					handler = log.LvlFilterHandler(loglvl, handler)
-				} else {
-					l.Warn("Could not parse level for config", "m", m)
-				}
-			} else {
-				l.Warn("Nonexistent level for config", "m", m)
-			}
-
-			handlers = append(handlers, handler)
-		}
-
-		topLevelHandlers = append(topLevelHandlers, wrappedOut.ORHandler(handlers...))
+		topLevelHandlers = append(topLevelHandlers, handler)
 	}
 
 	l.SetHandler(log.MultiHandler(topLevelHandlers...))
@@ -163,6 +118,56 @@ func (l *MyLogger) SetupLogHandlersFromConfig(logCfg *viper.Viper) {
 	if mylog.GlobalLogger == nil {
 		mylog.GlobalLogger = l
 	}
+}
+
+func setupOneHandler(onecfg LoggingConfig) log.Handler {
+	var outputHandler log.Handler
+	switch path := onecfg.FileName; path {
+	case "":
+		fallthrough
+	case "/dev/stderr":
+		outputHandler = log.StreamHandler(os.Stderr, log.TerminalFormat())
+	case "/dev/stdout":
+		outputHandler = log.StreamHandler(os.Stdout, log.TerminalFormat())
+	default:
+		outputHandler = log.Must.FileHandler(path, log.LogfmtFormat())
+	}
+
+	if onecfg.PrintFile {
+		outputHandler = log.CallerFileHandler(outputHandler)
+	}
+	if onecfg.PrintFunction {
+		outputHandler = log.CallerFuncHandler(outputHandler)
+	}
+
+	wrappedOut := newOrHandler(outputHandler)
+
+	handlers := []log.Handler{}
+
+	loglvl, err := log.LvlFromString(onecfg.Level)
+	if err == nil {
+		handlers = append(handlers, log.LvlFilterHandler(loglvl, wrappedOut))
+	}
+
+	for _, m := range onecfg.ModulesToEnable {
+		name, ok := m["name"]
+		if !ok {
+			continue
+		}
+		handler := MatchFilterHandler("module", name, wrappedOut)
+
+		level, ok := m["level"]
+		if ok {
+			loglvl, err := log.LvlFromString(level)
+			if err == nil {
+				handler = log.LvlFilterHandler(loglvl, handler)
+			}
+		}
+
+		handlers = append(handlers, handler)
+	}
+
+	return wrappedOut.ORHandler(handlers...)
 }
 
 type orhandler struct {
@@ -192,7 +197,7 @@ func (o *orhandler) ORHandler(in ...log.Handler) log.Handler {
 		o.producedOutput = false
 		o.outMu.Unlock()
 		for _, h := range in {
-			h.Log(r)
+			_ = h.Log(r) // nothing really can be done if this errors
 			o.outMu.RLock()
 			if o.producedOutput {
 				o.outMu.RUnlock()
@@ -202,4 +207,30 @@ func (o *orhandler) ORHandler(in ...log.Handler) log.Handler {
 		}
 		return nil
 	})
+}
+
+type Record = log.Record
+type Handler = log.Handler
+
+// search through all the keys for a match
+func MatchFilterHandler(key string, value interface{}, h Handler) Handler {
+	return log.FilterHandler(func(r *Record) (pass bool) {
+		switch key {
+		case r.KeyNames.Lvl:
+			return r.Lvl == value
+		case r.KeyNames.Time:
+			return r.Time == value
+		case r.KeyNames.Msg:
+			return r.Msg == value
+		}
+
+		for i := 0; i < len(r.Ctx); i += 2 {
+			if r.Ctx[i] == key {
+				if r.Ctx[i+1] == value {
+					return true
+				}
+			}
+		}
+		return false
+	}, h)
 }

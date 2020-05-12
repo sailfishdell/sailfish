@@ -238,7 +238,7 @@ func init() {
 		return (float64)(length), nil
 	})
 	AddFunction("epoch_to_date", func(args ...interface{}) (interface{}, error) {
-		return time.Unix(int64(args[0].(float64)), 0), nil
+		return time.Unix(int64(args[0].(float64)), 0).UTC(), nil
 	})
 	AddFunction("traverse_struct", func(args ...interface{}) (interface{}, error) {
 		s := args[0]

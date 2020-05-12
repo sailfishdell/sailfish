@@ -11,7 +11,7 @@ import (
 
 	ah "github.com/superchalupa/sailfish/src/actionhandler"
 	"github.com/superchalupa/sailfish/src/log"
-	"github.com/superchalupa/sailfish/src/ocp/eventservice"
+	//"github.com/superchalupa/sailfish/src/ocp/eventservice"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
@@ -78,10 +78,6 @@ func MakeSubmitTestMetricReport(eb eh.EventBus, d *domain.DomainObjects, ch eh.C
 						"@odata.id": "/redfish/v1/TelemetryService/MetricReportDefinitions"},
 				}})
 
-		eventData := eventservice.MetricReportData{Data: m}
-		responseEvent := eh.NewEvent(eventservice.ExternalMetricEvent, eventData, time.Now())
-		eb.PublishEvent(ctx, responseEvent)
-
 		retData.Headers = map[string]string{
 			"Location": "/redfish/v1/TelemetryService/MetricReports/" + n,
 		}
@@ -90,4 +86,5 @@ func MakeSubmitTestMetricReport(eb eh.EventBus, d *domain.DomainObjects, ch eh.C
 		retData.StatusCode = 201
 		return nil
 	}
+
 }

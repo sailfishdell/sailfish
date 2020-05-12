@@ -31,7 +31,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"Id":                 "EventService",
 						"Name":               "Event Service",
 						"Description":        "Event Service represents the properties for the service",
-						"ServerSentEventUri": "/redfish/v1/SSE",
+						"ServerSentEventUri": "/redfish/v1/EventService/SSE",
 						"Status": map[string]interface{}{
 							"HealthRollup": "OK", //hardcoded
 							"Health":       "OK", //hardcoded
@@ -67,12 +67,6 @@ func RegisterAggregate(s *testaggregate.Service) {
 							},
 						},
 					}},
-
-				&domain.UpdateRedfishResourceProperties{
-					ID: params["rootid"].(eh.UUID),
-					Properties: map[string]interface{}{
-						"EventService": map[string]interface{}{"@odata.id": vw.GetURI()},
-					}},
 			}, nil
 		})
 
@@ -82,7 +76,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 				&domain.CreateRedfishResource{
 					ResourceURI: vw.GetURI(),
 					Type:        "#EventDestinationCollection.EventDestinationCollection",
-					Context:     params["rooturi"].(string) + "/$metadata#EventDestinationCollection.EventDestinationCollection",
+					Context:     "/redfish/v1/$metadata#EventDestinationCollection.EventDestinationCollection",
 					// Plugin is how we find the POST command handler
 					Plugin: "EventService",
 					Privileges: map[string]interface{}{
@@ -92,10 +86,10 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"PATCH": []string{"ConfigureManager"},
 					},
 					Properties: map[string]interface{}{
-						"Name":                     "Event Subscriptions Collection",
-						"Description":              "List of Event subscriptions",
-						"Members@meta":             vw.Meta(view.GETProperty("members"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
-						"Members@odata.count@meta": vw.Meta(view.GETProperty("members"), view.GETFormatter("count"), view.GETModel("default")),
+						"Name":                "Event Subscriptions Collection",
+						"Description":         "List of Event subscriptions",
+						"Members@meta":        []interface{}{},
+						"Members@odata.count": 0,
 					}},
 
 				&domain.UpdateRedfishResourceProperties{
@@ -113,7 +107,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 					ResourceURI: vw.GetURI(),
 
 					Type:    "#EventDestination.v1_2_0.EventDestination",
-					Context: params["rooturi"].(string) + "/$metadata#EventDestination.EventDestination",
+					Context: "/redfish/v1/$metadata#EventDestination.EventDestination",
 					// Plugin is how we find the POST command handler
 					Plugin: "EventService",
 					Privileges: map[string]interface{}{

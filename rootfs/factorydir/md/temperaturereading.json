@@ -1,0 +1,13 @@
+{ 
+    "@odata.type": "#MetricDefinition.v1_0_2.MetricDefinition",
+    "Id": "TemperatureReading",
+    "Name": " Temperature Reading Metric Definition",
+    "Description": "Temperature sensor reading in Celsius",
+    "MetricType": "Numeric",
+    "MetricDataType": "Decimal",
+    "Units": "Cel",
+    "Accuracy": 0.0,
+    "SensingInterval": "PT5S",
+    "@odata.context": "/redfish/v1/$metadata#MetricDefinition.MetricDefinition",
+    "@odata.id": "/redfish/v1/TelemetryService/MetricDefinitions/TemperatureReading"
+} 

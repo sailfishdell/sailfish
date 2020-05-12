@@ -1,0 +1,23 @@
+{
+    "@odata.type": "#Triggers.v1_1_1.Triggers",
+    "Id": "IERRCriticalTrigger",
+    "Name":"Trigger on CPU  IERR exception",
+    "Description": "Trigger when an OEM event is raised",
+    "MetricType": "Discrete",
+    "TriggerActions": [
+        "RedfishMetricReport"
+    ],
+    "EventTriggers": [
+        "iDRAC.1.6.CPU0000"
+    ],
+    "EventTriggers@odata.count": 1,
+    "Links": {
+    	"MetricReportDefinitions": [
+    	{
+           "@odata.id": "/redfish/v1/TelemetryService/MetricReportDefinitions/CPURegisters"
+    	}
+    	]
+    },
+    "@odata.context": "/redfish/v1/$metadata#Triggers.Triggers",
+    "@odata.id": "/redfish/v1/TelemetryService/Triggers/IERRCriticalTrigger"
+}

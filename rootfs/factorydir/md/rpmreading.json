@@ -1,0 +1,13 @@
+{ 
+    "@odata.type": "#MetricDefinition.v1_0_2.MetricDefinition",
+    "Id": "RPMReading",
+    "Name": "RPM Reading Metric Definition",
+    "Description": "Current reading specific to the sensor",
+    "MetricType": "Numeric",
+    "MetricDataType": "Decimal",
+    "Units": "RPM",
+    "Accuracy": 0.0,
+    "SensingInterval": "PT5S",
+    "@odata.context": "/redfish/v1/$metadata#MetricDefinition.MetricDefinition",
+    "@odata.id": "/redfish/v1/TelemetryService/MetricDefinitions/RPMReading"
+} 

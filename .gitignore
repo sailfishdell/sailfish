@@ -11,7 +11,7 @@ server.key
 redfish.yaml
 http-access.log
 cscope.out
-sailfish
+/sailfish
 perm/upld*
 sailfish.db
 telemetry.db*

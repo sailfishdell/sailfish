@@ -25,11 +25,10 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"GET": []string{"Login"},
 					},
 					Properties: map[string]interface{}{
-						"Id":          "Power",
-						"Description": "Power",
-						"Name":        "Power",
-						"@odata.etag": `W/"abc123"`,
-
+						"Id":                             "Power",
+						"Description":                    "Power",
+						"Name":                           "Power",
+						"@odata.etag":                    `W/"abc123"`,
 						"PowerSupplies@meta":             vw.Meta(view.GETProperty("power_supply_uris"), view.GETFormatter("expand"), view.GETModel("default")),
 						"PowerSupplies@odata.count@meta": vw.Meta(view.GETProperty("power_supply_uris"), view.GETFormatter("count"), view.GETModel("default")),
 						"PowerControl@meta":              vw.Meta(view.GETProperty("power_control_uris"), view.GETFormatter("expand"), view.GETModel("default")),
@@ -79,13 +78,13 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"GET": []string{"Login"},
 					},
 					Properties: map[string]interface{}{
-						"Name":                     "System Power History",
-						"MemberId":                 "PowerHistogram",
-						"HistoryMaxWattsTime@meta": vw.Meta(view.GETProperty("max_watts_time"), view.GETModel("default")),
-						"HistoryMaxWatts@meta":     vw.Meta(view.GETProperty("max_watts"), view.GETModel("default")),
-						"HistoryMinWattsTime@meta": vw.Meta(view.GETProperty("min_watts_time"), view.GETModel("default")),
-						"HistoryMinWatts@meta":     vw.Meta(view.GETProperty("min_watts"), view.GETModel("default")),
-						"HistoryAverageWatts@meta": vw.Meta(view.GETProperty("average_watts"), view.GETModel("default")),
+						"Name":                "System Power History",
+						"MemberId":            "PowerHistogram",
+						"HistoryMaxWattsTime": nil,
+						"HistoryMaxWatts":     0,
+						"HistoryMinWattsTime": nil,
+						"HistoryMinWatts":     0,
+						"HistoryAverageWatts": 0,
 					}},
 			}, nil
 		})
@@ -109,7 +108,7 @@ func RegisterAggregate(s *testaggregate.Service) {
 						"PowerConsumedWatts@meta": vw.Meta(view.PropGET("consumed_watts")),
 
 						"Oem": map[string]interface{}{
-							"EnergyConsumptionStartTime@meta": vw.Meta(view.PropGET("energy_consumption_start_time")),
+							"EnergyConsumptionStartTime@meta": 0,
 							"EnergyConsumptionkWh":            0,
 							"HeadroomWatts":                   0,
 							"MaxPeakWatts":                    0,
@@ -128,8 +127,12 @@ func RegisterAggregate(s *testaggregate.Service) {
 							"MaxConsumedWatts":     0,
 							"MinConsumedWatts":     0,
 						},
-						"RelatedItem@meta":             vw.Meta(view.GETProperty("power_related_items"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
-						"RelatedItem@odata.count@meta": vw.Meta(view.GETProperty("power_related_items"), view.GETFormatter("count"), view.GETModel("default")),
+						"RelatedItem": []interface{}{
+							map[string]interface{}{
+								"@odata.id": "/redfish/v1/Chassis/System.Chassis.1",
+							},
+						},
+						"RelatedItem@odata.count": 1,
 					},
 				}}, nil
 		})

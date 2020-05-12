@@ -1,0 +1,28 @@
+{
+    "@odata.type": "#Triggers.v1_1_1.Triggers",
+    "Id": "FANCriticalTrigger",
+    "Name":"Trigger on Fan critical errors",
+    "Description": "Trigger when an OEM event is raised",
+    "MetricType": "Discrete",
+    "TriggerActions": [
+        "RedfishMetricReport"
+    ],
+    "EventTriggers": [
+        "iDRAC.1.6.FAN0013",
+        "iDRAC.1.6.FAN0016",
+        "iDRAC.1.6.FAN0003",
+        "iDRAC.1.6.FAN0004",
+        "iDRAC.1.6.FAN0015",
+        "iDRAC.1.6.FAN0001"
+    ],
+    "EventTriggers@odata.count": 6,
+    "Links": {
+    	"MetricReportDefinitions": [
+    	{
+           "@odata.id": "/redfish/v1/TelemetryService/MetricReportDefinitions/FanSensor"
+    	}
+    	]
+    },
+    "@odata.context": "/redfish/v1/$metadata#Triggers.Triggers",
+    "@odata.id": "/redfish/v1/TelemetryService/Triggers/FANCriticalTrigger"
+}

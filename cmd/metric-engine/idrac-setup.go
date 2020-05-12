@@ -2,98 +2,108 @@ package main
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
-	"time"
 
-	eh "github.com/looplab/eventhorizon"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/spf13/viper"
 
 	log "github.com/superchalupa/sailfish/src/log"
-	"github.com/superchalupa/sailfish/src/looplab/event"
 	"github.com/superchalupa/sailfish/src/ocp/am3"
 
-	"github.com/superchalupa/sailfish/cmd/metric-engine/telemetry-db"
+	"github.com/superchalupa/sailfish/cmd/metric-engine/eemi"
+	"github.com/superchalupa/sailfish/cmd/metric-engine/metric"
+	"github.com/superchalupa/sailfish/cmd/metric-engine/persistence"
+	"github.com/superchalupa/sailfish/cmd/metric-engine/telemetry"
+	"github.com/superchalupa/sailfish/cmd/metric-engine/triggers"
 	"github.com/superchalupa/sailfish/cmd/metric-engine/udb"
+	"github.com/superchalupa/sailfish/cmd/metric-engine/watchdog"
 )
 
-func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d *BusComponents) {
-	// 2 instances of AM3 service. This means we can run concurrent message processing loops in 2 different goroutines
-	// Each goroutine has exclusive access to its database
+// nolint: gochecknoinits
+// have to have init() function to runtime register the compile-time optional components, better suggestions welcome
+func init() {
+	initOptional()
+	optionalComponents = append(optionalComponents, func(logger log.Logger, cfg *viper.Viper, d busIntf) func() {
+		return setup(context.Background(), logger, cfg, d)
+	})
+}
 
-	// 		-- cgo events
-	cgoStartup(logger.New("module", "cgo"), d)
+func setDefaults(cfgMgr *viper.Viper) {
+	cfgMgr.SetDefault("main.databasepath",
+		"file:/run/telemetryservice/telemetry_timeseries_database.db?_foreign_keys=on&cache=shared&mode=rwc&_busy_timeout=1000&_journal_mode=WAL")
+	cfgMgr.SetDefault("main.startup", "startup-events")
+	cfgMgr.SetDefault("main.mddirectory", "/usr/share/telemetryservice/md/")
+	cfgMgr.SetDefault("main.mrddirectory", "/usr/share/telemetryservice/mrd/")
+	cfgMgr.SetDefault("main.triggerdirectory", "/usr/share/telemetryservice/trigger/")
+}
 
-	// Processing loop 2:
-	//  	-- "New" DB access
-	am3Svc_n2, _ := am3.StartService(ctx, logger.New("module", "AM3_DB"), "database", d)
-	telemetry.RegisterAM3(logger.New("module", "sql_am3_functions"), cfgMgr, am3Svc_n2, d)
+// setup will startup am3 services and database connections
+//
+// We are going to initialize 2 instances of AM3 service.  This means we can
+// run concurrent message processing loops in 2 different goroutines Each
+// goroutine has exclusive access to its database, so we'll be able to
+// simultaneously do ops on each DB
+func setup(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, d am3.BusObjs) func() {
+	// register global metric events with event horizon
+	metric.RegisterEvent()
+	telemetry.RegisterEvents()
 
-	// Processing loop 3:
-	//  	-- UDB access
-	am3Svc_n3, _ := am3.StartService(ctx, logger.New("module", "AM3_UDB"), "udb database", d)
-	udb.RegisterAM3(logger.New("module", "udb_am3_functions"), cfgMgr, am3Svc_n3, d)
+	// setup viper defaults
+	setDefaults(cfgMgr)
 
-	injectStartupEvents := func(section string) {
-		fmt.Printf("Processing Startup Events from %s\n", section)
-		startup := cfgMgr.Get(section)
-		if startup == nil {
-			logger.Warn("SKIPPING: no startup events found")
-			return
-		}
-		events, ok := startup.([]interface{})
-		if !ok {
-			logger.Crit("SKIPPING: Startup Events skipped - malformed.", "Section", section, "malformed-value", startup)
-			return
-		}
-		for i, v := range events {
-			settings, ok := v.(map[interface{}]interface{})
-			if !ok {
-				logger.Crit("SKIPPING: malformed event. Expected map", "Section", section, "index", i, "malformed-value", v, "TYPE", fmt.Sprintf("%T", v))
-				continue
-			}
-
-			name, ok := settings["name"].(string)
-			if !ok {
-				logger.Crit("SKIPPING: Config file section missing event name- 'name' key missing.", "Section", section, "index", i, "malformed-value", v)
-				continue
-			}
-			eventType := eh.EventType(name + "Event")
-
-			dataString, ok := settings["data"].(string)
-			if !ok {
-				logger.Crit("SKIPPING: Config file section missing event name- 'data' key missing.", "Section", section, "index", i, "malformed-value", v)
-				continue
-			}
-
-			eventData, err := eh.CreateEventData(eventType)
-			if err != nil {
-				logger.Crit("SKIPPING: couldnt instantiate event", "Section", section, "index", i, "malformed-value", v, "event", name, "err", err)
-				continue
-			}
-
-			err = json.Unmarshal([]byte(dataString), &eventData)
-			if err != nil {
-				// well if it doesn't unmarshall, try to just send it as a string (Used for sending DatabaseMaintenance events.
-				eventData = dataString
-			}
-
-			fmt.Printf("\tPublishing Startup Event (%s)\n", name)
-			evt := event.NewSyncEvent(eventType, eventData, time.Now())
-			evt.Add(1)
-			d.GetBus().PublishEvent(context.Background(), evt)
-		}
+	// message registry for everybody to use
+	am3SvcN2, _ := am3.StartService(ctx, log.With(logger, "module", "AM3_TDB"), "database", d)
+	err := eemi.Startup(log.With(logger, "module", "eemi"), cfgMgr, am3SvcN2, d)
+	if err != nil {
+		panic("Error initializing message registry: " + err.Error())
 	}
 
-	// After we have our event loops set up,
-	// Read the config file and process any startup events that are listed
-	startup := cfgMgr.GetStringSlice("main.startup")
-	for _, section := range startup {
-		injectStartupEvents(section)
+	// Processing loop 1: telemetry database
+	shutdownbase, err := telemetry.Startup(log.With(logger, "module", "telemetry"), cfgMgr, am3SvcN2, d)
+	if err != nil {
+		panic("Error initializing base telemetry subsystem: " + err.Error())
+	}
+
+	// Import all MD/MRD/Trigger
+	err = persistence.Import(logger, cfgMgr, d.GetBus())
+	if err != nil {
+		panic("Error loading Metric Definitions: " + err.Error())
+	}
+
+	// Processing loop 2: UDB database
+	am3SvcN3, _ := am3.StartService(ctx, log.With(logger, "module", "AM3_UDB"), "udb database", d)
+	shutdownudb, err := udb.Startup(log.With(logger, "module", "UDB"), cfgMgr, am3SvcN3, d)
+	if err != nil {
+		panic("Error initializing UDB Import subsystem: " + err.Error())
+	}
+
+	// Trigger processing
+	err = triggers.StartupTriggerProcessing(log.With(logger, "module", "trigger_am3_functions"), cfgMgr, am3SvcN2, d)
+	if err != nil {
+		panic("Error initializing trigger processing subsystem: " + err.Error())
+	}
+
+	// Watchdog
+	err = watchdog.StartWatchdogHandling(logger, am3SvcN2, d)
+	if err != nil {
+		panic("Error initializing watchdog handling: " + err.Error())
+	}
+
+	return func() {
+		shutdown(logger, am3SvcN3, am3SvcN2)
+		shutdownudb()
+		shutdownbase()
 	}
 }
 
-func shutdown() {
-	cgoShutdown()
+type Shutdowner interface {
+	Shutdown() error
+}
+
+func shutdown(logger log.Logger, shutdownlist ...Shutdowner) {
+	for _, s := range shutdownlist {
+		err := s.Shutdown()
+		if err != nil {
+			logger.Crit("Error shutting down AM3", "err", err)
+		}
+	}
 }

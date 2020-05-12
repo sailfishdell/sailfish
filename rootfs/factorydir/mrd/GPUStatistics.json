@@ -1,0 +1,29 @@
+{
+  "Id": "GPUStatistics",
+  "Name": "GPU Statistics (experimental) Metric Report",
+  "Description": "Graphics Processing Unit Frame Buffer and Graphic Device (GR) memory ECC(Error-correcting code) statistics data. This report is offered as an experimental preview.",
+  "MetricReportDefinitionEnabled": true,
+  "MetricReportDefinitionType": "Periodic",
+  "Schedule": {"RecurrenceInterval": "PT600S"},
+  "ReportUpdates": "Overwrite",
+  "SuppressRepeatedMetricValue": false,
+  "ReportActions": ["RedfishEvent", "LogToMetricReportsCollection"],
+  "Metrics": [
+    {"MetricID": "CumulativeDBECounterFB"},
+    {"MetricID": "CumulativeDBECounterGR"},
+    {"MetricID": "CumulativeSBECounterFB"},
+    {"MetricID": "CumulativeSBECounterGR"},
+    {"MetricID": "DBECounterFB"},
+    {"MetricID": "DBECounterFBL2Cache"},
+    {"MetricID": "DBECounterGRL1Cache"},
+    {"MetricID": "DBECounterGRRF"},
+    {"MetricID": "DBECounterGRTex"},
+    {"MetricID": "DBERetiredPages"},
+    {"MetricID": "SBECounterFB"},
+    {"MetricID": "SBECounterFBL2Cache"},
+    {"MetricID": "SBECounterGRL1Cache"},
+    {"MetricID": "SBECounterGRRF"},
+    {"MetricID": "SBECounterGRTex"},
+    {"MetricID": "SBERetiredPages"}
+  ]
+}

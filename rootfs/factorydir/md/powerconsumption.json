@@ -1,0 +1,13 @@
+{ 
+    "@odata.type": "#MetricDefinition.v1_0_2.MetricDefinition",
+    "Id": "PowerConsumption",
+    "Name": "GPU Power Consumption Metric Definition",
+    "Description": "Total GPU board power consumption in mWatts (100mW resolution)",
+    "MetricType": "Numeric",
+    "MetricDataType": "Decimal",
+    "Units": "mW",
+    "Accuracy": 0.0,
+    "SensingInterval": "PT5S",
+    "@odata.context": "/redfish/v1/$metadata#MetricDefinition.MetricDefinition",
+    "@odata.id": "/redfish/v1/TelemetryService/MetricDefinitions/PowerConsumption"
+} 

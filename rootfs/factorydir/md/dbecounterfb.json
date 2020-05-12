@@ -1,0 +1,12 @@
+{ 
+    "@odata.type": "#MetricDefinition.v1_0_2.MetricDefinition",
+    "Id": "DBECounterFB",
+    "Name": "FB Memory Double Bit Errors from Frame Buffer Metric Definition",
+    "Description": "Double-bit errors from  Frame Buffer in Frame Buffer memory",
+    "MetricType": "Counter",
+    "MetricDataType": "Integer",
+    "Accuracy": 0.0,
+    "SensingInterval": "PT600S",
+    "@odata.context": "/redfish/v1/$metadata#MetricDefinition.MetricDefinition",
+    "@odata.id": "/redfish/v1/TelemetryService/MetricDefinitions/DBECounterFB"
+} 

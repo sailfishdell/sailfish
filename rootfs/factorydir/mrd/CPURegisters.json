@@ -1,0 +1,10 @@
+{ "Id": "CPURegisters",
+  "Name": "CPU Register Dump Metric Report",
+  "Description": "CPU Register dump (uuencoded binary data). This is platform specific. On Intel platform this represents the MSR registers and on AMD platform this represents the MCA registers. Please refer to OEM documentation on how to decode the binary data.",
+  "MetricReportDefinitionEnabled": true,
+  "MetricReportDefinitionType": "OnChange",
+  "ReportUpdates": "AppendWrapsWhenFull",
+  "SuppressRepeatedMetricValue": true,
+  "ReportActions": [],
+  "Metrics": []
+}

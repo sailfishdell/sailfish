@@ -1,0 +1,16 @@
+{ 
+    "@odata.type": "#MetricDefinition.v1_0_2.MetricDefinition",
+    "Id": "GPUStatus",
+    "Name": "GPU Status Metric Definition",
+    "Description": "GPU Availability Status",
+    "MetricType": "Discrete",
+    "MetricDataType": "Enumeration",
+    "SensingInterval": "PT5S",
+    "DiscreteValues": [ 
+        "Available", 
+        "Unavailable", 
+        "Not Applicable" 
+    ], 
+    "@odata.context": "/redfish/v1/$metadata#MetricDefinition.MetricDefinition",
+    "@odata.id": "/redfish/v1/TelemetryService/MetricDefinitions/GPUStatus"
+} 

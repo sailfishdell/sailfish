@@ -1,0 +1,11 @@
+{ 
+    "@odata.type": "#MetricDefinition.v1_0_2.MetricDefinition",
+    "Id": "CriticalWarning",
+    "Name": "Critical Warning Metric Definition",
+    "Description": "Indicates critical warnings about the controller state",
+    "MetricType": "Discrete",
+    "MetricDataType": "Integer",
+    "SensingInterval": "PT3600S",
+    "@odata.context": "/redfish/v1/$metadata#MetricDefinition.MetricDefinition",
+    "@odata.id": "/redfish/v1/TelemetryService/MetricDefinitions/CriticalWarning"
+} 

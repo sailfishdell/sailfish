@@ -1,0 +1,1121 @@
+main:
+    aggregatesearchpath: [ "/usr/share/sailfish/aggs/", "aggs/" ]
+    startup: ["startup-events"]
+
+Startup-Events:
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "",
+        "Type": "SysChassis",
+        "FQDD": "System.Chassis.1"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "",
+        "Type": "ECChassis",
+        "FQDD": "CMC.Integrated.1"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "",
+        "Type": "ECChassis",
+        "FQDD": "CMC.Integrated.2"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "",
+        "Type": "ECManager",
+        "FQDD": "CMC.Integrated.1"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "",
+        "Type": "ECManager",
+        "FQDD": "CMC.Integrated.2"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "ECFan",
+        "FQDD": "Fan.Slot.1"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "ECFan",
+        "FQDD": "Fan.Slot.2"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "ECFan",
+        "FQDD": "Fan.Slot.3"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "ECFan",
+        "FQDD": "Fan.Slot.4"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "ECFan",
+        "FQDD": "Fan.Slot.5"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "ECFan",
+        "FQDD": "Fan.Slot.6"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "ECFan",
+        "FQDD": "Fan.Slot.7"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "ECFan",
+        "FQDD": "Fan.Slot.8"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "ECFan",
+        "FQDD": "Fan.Slot.9"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "ECIOM",
+        "FQDD": "IOM.Slot.A1"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "ECIOM",
+        "FQDD": "IOM.Slot.A1a"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "ECIOM",
+        "FQDD": "IOM.Slot.A1b"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "ECIOM",
+        "FQDD": "IOM.Slot.A2"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "ECIOM",
+        "FQDD": "IOM.Slot.A2a"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "ECIOM",
+        "FQDD": "IOM.Slot.A2b"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "ECIOM",
+        "FQDD": "IOM.Slot.B1"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "ECIOM",
+        "FQDD": "IOM.Slot.B1a"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "ECIOM",
+        "FQDD": "IOM.Slot.B1b"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "ECIOM",
+        "FQDD": "IOM.Slot.B2"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "ECIOM",
+        "FQDD": "IOM.Slot.B2a"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "ECIOM",
+        "FQDD": "IOM.Slot.B2b"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "ECIOM",
+        "FQDD": "IOM.Slot.C1"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "ECIOM",
+        "FQDD": "IOM.Slot.C2"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "ECPSU",
+        "FQDD": "PSU.Slot.1"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "ECPSU",
+        "FQDD": "PSU.Slot.2"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "ECPSU",
+        "FQDD": "PSU.Slot.3"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "ECPSU",
+        "FQDD": "PSU.Slot.4"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "ECPSU",
+        "FQDD": "PSU.Slot.5"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "ECPSU",
+        "FQDD": "PSU.Slot.6"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "ECSled",
+        "FQDD": "System.Modular.1"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "ECSled",
+        "FQDD": "System.Modular.2"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "ECSled",
+        "FQDD": "System.Modular.3"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "ECSled",
+        "FQDD": "System.Modular.4"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "ECSled",
+        "FQDD": "System.Modular.5"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "ECSled",
+        "FQDD": "System.Modular.6"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "ECSled",
+        "FQDD": "System.Modular.7"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "ECSled",
+        "FQDD": "System.Modular.8"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "ECSled",
+        "FQDD": "System.Modular.1a"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "ECSled",
+        "FQDD": "System.Modular.1b"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "ECSled",
+        "FQDD": "System.Modular.2a"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "ECSled",
+        "FQDD": "System.Modular.2b"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "ECSled",
+        "FQDD": "System.Modular.3a"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "ECSled",
+        "FQDD": "System.Modular.3b"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "ECSled",
+        "FQDD": "System.Modular.4a"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "ECSled",
+        "FQDD": "System.Modular.4b"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "ECSled",
+        "FQDD": "System.Modular.5a"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "ECSled",
+        "FQDD": "System.Modular.5b"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "ECSled",
+        "FQDD": "System.Modular.6a"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "ECSled",
+        "FQDD": "System.Modular.6b"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "ECSled",
+        "FQDD": "System.Modular.7a"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "ECSled",
+        "FQDD": "System.Modular.7b"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "ECSled",
+        "FQDD": "System.Modular.8a"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "ECSled",
+        "FQDD": "System.Modular.8b"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "Slot",
+        "FQDD": "CMCSlot.1"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "Slot",
+        "FQDD": "CMCSlot.2"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "Slot",
+        "FQDD": "FanSlot.1"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "Slot",
+        "FQDD": "FanSlot.2"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "Slot",
+        "FQDD": "FanSlot.3"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "Slot",
+        "FQDD": "FanSlot.4"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "Slot",
+        "FQDD": "FanSlot.5"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "Slot",
+        "FQDD": "FanSlot.6"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "Slot",
+        "FQDD": "FanSlot.7"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "Slot",
+        "FQDD": "FanSlot.8"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "Slot",
+        "FQDD": "FanSlot.9"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "Slot",
+        "FQDD": "IOMSlot.1"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "Slot",
+        "FQDD": "IOMSlot.2"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "Slot",
+        "FQDD": "IOMSlot.3"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "Slot",
+        "FQDD": "IOMSlot.4"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "Slot",
+        "FQDD": "IOMSlot.5"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "Slot",
+        "FQDD": "IOMSlot.6"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "Slot",
+        "FQDD": "PSUSlot.1"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "Slot",
+        "FQDD": "PSUSlot.2"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "Slot",
+        "FQDD": "PSUSlot.3"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "Slot",
+        "FQDD": "PSUSlot.4"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "Slot",
+        "FQDD": "PSUSlot.5"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "Slot",
+        "FQDD": "PSUSlot.6"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "Slot",
+        "FQDD": "SledSlot.1"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "Slot",
+        "FQDD": "SledSlot.2"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "Slot",
+        "FQDD": "SledSlot.3"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "Slot",
+        "FQDD": "SledSlot.4"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "Slot",
+        "FQDD": "SledSlot.5"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "Slot",
+        "FQDD": "SledSlot.6"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "Slot",
+        "FQDD": "SledSlot.7"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "Slot",
+        "FQDD": "SledSlot.8"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "SlotConfig",
+        "FQDD": "SlotConfig.1"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "SlotConfig",
+        "FQDD": "SlotConfig.2"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "SlotConfig",
+        "FQDD": "SlotConfig.3"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "SlotConfig",
+        "FQDD": "SlotConfig.4"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "SlotConfig",
+        "FQDD": "SlotConfig.5"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "SlotConfig",
+        "FQDD": "SlotConfig.6"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "SlotConfig",
+        "FQDD": "SlotConfig.7"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "SlotConfig",
+        "FQDD": "SlotConfig.8"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "System.Chassis.1",
+        "Type": "SlotConfig",
+        "FQDD": "SlotConfig.9"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "CMC.Integrated.1",
+        "Type": "Certificate",
+        "FQDD": "FactoryIdentity.1"
+      }
+  - name: Component
+    data: |
+      {
+        "ParentFQDD": "CMC.Integrated.2",
+        "Type": "Certificate",
+        "FQDD": "FactoryIdentity.1"
+      }
+  - name: AddMetricDefinition
+    data: |
+      {
+        "Calibration": 2,
+        "Id": "FanSpeedPercent",
+        "Implementation": "PhysicalSensor",
+        "MaxReadingRange": 100,
+        "MetricDataType": "Percentage",
+        "MetricProperties": [ "/redfish/v1/Chassis/System.Chassis.1/Sensors/Fans/Fan.Slot.{SlotNumber}#Oem/Dell/Reading"],
+        "MetricType": "Numeric",
+        "MinReadingRange": 0,
+        "Name": "Fan Speed in Percent Metric Definition",
+        "Accuracy": 1,
+        "PhysicalContext": "Fan",
+        "Precision": 2,
+        "SensingInterval": "PT1S",
+        "TimestampAccuracy": "PT1S",
+                "Units": "%",
+                "Wildcards": [{
+                    "Name": "SlotNumber",
+                    "Values": [
+                        "1",
+                        "2",
+                        "3",
+                        "4",
+                        "5",
+                        "6",
+                        "7",
+                        "8",
+                        "9",
+                        "*"
+                    ]
+                }]
+            }
+
+  - name: AddMetricDefinition
+    data: |
+         {
+           "Calibration": 2,
+           "Id": "FanSpeedRPM",
+           "Implementation": "PhysicalSensor",
+           "MaxReadingRange": 1000,
+           "MetricDataType": "Decimal",
+           "MetricProperties": [ "/redfish/v1/Chassis/System.Chassis.1/Sensors/Fans/Fan.Slot.{SlotNumber}#Oem/Reading"],
+           "MetricType": "Numeric",
+           "MinReadingRange": 0,
+           "Name": "Fan RPM Speed Metric Definition",
+           "Accuracy": 1,
+           "PhysicalContext": "Fan",
+           "Precision": 2,
+           "SensingInterval": "PT1S",
+           "TimestampAccuracy": "PT1S",
+               "Units": "RPM",
+               "Wildcards": [{
+                   "Name": "SlotNumber",
+                   "Values": [
+                       "1",
+                       "2",
+                       "3",
+                       "4",
+                       "5",
+                       "6",
+                       "7",
+                       "8",
+                       "9",
+                       "*"
+                   ]
+               }]
+           }
+
+  - name: AddMetricDefinition
+    data: |
+        {
+             "Accuracy": 1,
+             "Calibration": 2,
+             "Id": "PSUInputVoltage",
+             "Implementation": "PhysicalSensor",
+             "MaxReadingRange": 1000,
+             "MetricDataType": "Decimal",
+             "MetricProperties": [
+                 "/redfish/v1/Chassis/System.Chassis.1/Power/PowerSupplies/PSU.Slot.{SlotNumber}#LineInputVoltage"
+             ],
+             "MetricType": "Numeric",
+             "MinReadingRange": 0,
+             "Name": "PSU Input Voltage",
+             "PhysicalContext": "PSU",
+             "Precision": 2,
+             "SensingInterval": "PT1S",
+             "TimestampAccuracy": "PT1S",
+             "Units": "V",
+             "Wildcards": [{
+                 "Name": "SlotNumber",
+                 "Values": [
+                     "1",
+                     "2",
+                     "3",
+                     "4",
+                     "5",
+                     "6",
+                     "*"
+                 ]
+             }]
+         }
+
+  - name: AddMetricDefinition
+    data: |
+       {
+           "Accuracy": 1,
+           "Calibration": 2,
+           "Id": "PSUInputCurrent",
+           "Implementation": "PhysicalSensor",
+           "MaxReadingRange": 1000,
+           "MetricDataType": "Decimal",
+           "MetricProperties": [
+               "/redfish/v1/Chassis/System.Chassis.1/Power/PowerSupplies/PSU.Slot.{SlotNumber}#Oem/Dell/InputCurrent"
+           ],
+           "MetricType": "Numeric",
+           "MinReadingRange": 0,
+           "Name": "PSU Input Current",
+           "PhysicalContext": "PSU",
+           "Precision": 2,
+           "SensingInterval": "PT1S",
+           "TimestampAccuracy": "PT1S",
+           "Units": "RPM",
+           "Wildcards": [{
+               "Name": "SlotNumber",
+               "Values": [
+                   "1",
+                   "2",
+                   "3",
+                   "4",
+                   "5",
+                   "6",
+                   "*"
+               ]
+           }]
+        }
+
+
+  - name: AddMetricDefinition
+    data: |
+        {
+           "Accuracy": 1,
+           "Calibration": 2,
+           "Id": "ChassisReadingCelsius",
+           "Implementation": "PhysicalSensor",
+           "MaxReadingRange": 1000,
+           "MetricDataType": "Decimal",
+           "MetricProperties": [
+               "/redfish/v1/Chassis/System.Chassis.1/Sensors/Temperatures/System.Chassis.1%23Temperature.{Sensor}#ReadingCelsius"
+           ],
+           "MetricType": "Numeric",
+           "MinReadingRange": 0,
+           "Name": "Overall Chassis or Storage Sled Temperature Metric Definition",
+           "PhysicalContext": "Chassis",
+           "Precision": 2,
+           "SensingInterval": "PT1S",
+           "TimestampAccuracy": "PT1S",
+           "Units": "Celsius",
+           "Wildcards": [{
+               "Name": "Sensor",
+               "Values": [
+                   "CHASSIS_AMBIENT",
+                   "NODE_AMBIENT.1",
+                   "NODE_AMBIENT.2",
+                   "NODE_AMBIENT.3",
+                   "NODE_AMBIENT.4",
+                   "NODE_AMBIENT.5",
+                   "NODE_AMBIENT.6",
+                   "NODE_AMBIENT.7",
+                   "NODE_AMBIENT.8",
+                   "*"
+               ]
+           }]
+        }
+
+#        {
+#        }
+
+  - name: AddMetricDefinition
+    data: |
+        {
+           "Accuracy": 1,
+           "Calibration": 2,
+           "Id": "ChassisUpperThresholdNonCrit",
+           "Implementation": "PhysicalSensor",
+           "MaxReadingRange": 1000,
+           "MetricDataType": "Decimal",
+           "MetricProperties": [
+               "/redfish/v1/Chassis/System.Chassis.1/Sensors/Temperatures/System.Chassis.1%23Temperature.{Sensor}#UpperThresholdNonCritical"
+           ],
+           "MetricType": "Numeric",
+           "MinReadingRange": 0,
+           "PhysicalContext": "Chassis",
+           "Precision": 2,
+           "SensingInterval": "PT1S",
+           "TimestampAccuracy": "PT1S",
+           "Units": "Celsius",
+           "Wildcards": [{
+               "Name": "Sensor",
+               "Values": [
+                   "CHASSIS_AMBIENT",
+                   "NODE_AMBIENT.1",
+                   "NODE_AMBIENT.2",
+                   "NODE_AMBIENT.3",
+                   "NODE_AMBIENT.4",
+                   "NODE_AMBIENT.5",
+                   "NODE_AMBIENT.6",
+                   "NODE_AMBIENT.7",
+                   "NODE_AMBIENT.8",
+                   "*"
+               ]
+           }]
+         }
+
+  - name: AddMetricDefinition
+    data: |
+            {
+                    "Accuracy": 1,
+                    "Calibration": 2,
+                    "Id": "ChassisUpperThresholdCrit",
+                    "Implementation": "PhysicalSensor",
+                    "MaxReadingRange": 1000,
+                    "MetricDataType": "Decimal",
+                    "MetricProperties": [
+                        "/redfish/v1/Chassis/System.Chassis.1/Sensors/Temperatures/System.Chassis.1%23Temperature.{Sensor}#UpperThresholdCritical"
+                    ],
+                    "MetricType": "Numeric",
+                    "MinReadingRange": 0,
+                    "Name": "Overall Chassis or Storage Sled Upper Threshold Critical Metric Definition",
+                    "PhysicalContext": "Chassis",
+                    "Precision": 2,
+                    "SensingInterval": "PT1S",
+                    "Units": "Celsius",
+                    "Wildcards": [{
+                        "Name": "Sensor",
+                        "Values": [
+                            "CHASSIS_AMBIENT",
+                            "NODE_AMBIENT.1",
+                            "NODE_AMBIENT.2",
+                            "NODE_AMBIENT.3",
+                            "NODE_AMBIENT.4",
+                            "NODE_AMBIENT.5",
+                            "NODE_AMBIENT.6",
+                            "NODE_AMBIENT.7",
+                            "NODE_AMBIENT.8",
+                            "*"
+                        ]
+                    }]
+                }
+
+  - name: AddMetricDefinition
+    data: |
+            {
+                "Accuracy": 1,
+                "Calibration": 2,
+                "Id": "ChassisLowerThresholdNonCrit",
+                "Implementation": "PhysicalSensor",
+                "MaxReadingRange": 1000,
+                "MetricDataType": "Decimal",
+                "MetricProperties": [
+                    "/redfish/v1/Chassis/System.Chassis.1/Sensors/Temperatures/System.Chassis.1%23Temperature.{Sensor}#LowerThresholdNonCritical"
+                ],
+                "MetricType": "Numeric",
+                "MinReadingRange": 0,
+                "Name": "Overall Chassis or Storage Sled Lower Threshold Non Critical Metric Definition",
+                "PhysicalContext": "Chassis",
+                "Precision": 2,
+                "SensingInterval": "PT1S",
+                "Units": "Celsius",
+                    "TimestampAccuracy": "PT1S",
+                    "Wildcards": [{
+                        "Name": "Sensor",
+                        "Values": [
+                            "CHASSIS_AMBIENT",
+                            "NODE_AMBIENT.1",
+                            "NODE_AMBIENT.2",
+                            "NODE_AMBIENT.4",
+                            "NODE_AMBIENT.5",
+                            "NODE_AMBIENT.6",
+                            "NODE_AMBIENT.7",
+                            "NODE_AMBIENT.8",
+                            "*"
+                        ]
+                    }]
+                }
+
+  - name: AddMetricDefinition
+    data: |
+           {
+                    "Accuracy": 1,
+                    "Calibration": 2,
+                    "Id": "ChassisLowerThresholdCrit",
+                    "Implementation": "PhysicalSensor",
+                    "MaxReadingRange": 1000,
+                    "MetricDataType": "Decimal",
+                    "MetricProperties": [
+                        "/redfish/v1/Chassis/System.Chassis.1/Sensors/Temperatures/System.Chassis.1%23Temperature.{Sensor}#LowerThresholdCritical"
+                    ],
+                    "MetricType": "Numeric",
+                    "MinReadingRange": 0,
+                    "Name": "Overall Chassis or Storage Sled Upper Threshold Non Critical Metric Definition",
+                    "PhysicalContext": "Chassis",
+                    "Precision": 2,
+                    "SensingInterval": "PT1S",
+                    "TimestampAccuracy": "PT1S",
+                    "Units": "Celsius",
+                    "Wildcards": [{
+                        "Name": "Sensor",
+                        "Values": [
+                            "CHASSIS_AMBIENT",
+                            "NODE_AMBIENT.1",
+                            "NODE_AMBIENT.2",
+                            "NODE_AMBIENT.4",
+                            "NODE_AMBIENT.5",
+                            "NODE_AMBIENT.6",
+                            "NODE_AMBIENT.7",
+                            "NODE_AMBIENT.8",
+                            "*"
+                        ]
+                    }]
+                }
+
+  - name: AddMetricDefinition
+    data: |
+            {
+                    "Accuracy": 1,
+                    "Calibration": 2,
+                    "Id": "ChassisHistoryMinPower",
+                    "Implementation": "?????",
+                    "MaxReadingRange": 1000,
+                    "MetricDataType": "Decimal",
+                    "MetricProperties": [
+                        "/redfish/v1/Chassis/System.Chassis.1/Power/PowerTrends-1/Last{timeDuration}#HistoryMinWatts"
+                    ],
+                    "MetricType": "Numeric",
+                    "MinReadingRange": 0,
+                    "Name": "Chassis History Min Power",
+                    "PhysicalContext": "Chassis",
+                    "Precision": 2,
+                    "SensingInterval": "PT1S",
+                    "TimestampAccuracy": "PT1S",
+                    "Units": "Watts",
+                    "Wildcards": [{
+                        "Name": "timeDuration",
+                        "Values": [
+                            "Week",
+                            "Day",
+                            "Month",
+                            "*"
+                        ]
+                    }]
+                }
+
+  - name: AddMetricDefinition
+    data: |
+            {
+                    "Accuracy": 1,
+                    "Calibration": 2,
+                    "Id": "ChassisHistoryMaxPower",
+                    "Implementation": "?????",
+                    "MaxReadingRange": 1000,
+                    "MetricDataType": "Decimal",
+                    "MetricProperties": [
+                        "/redfish/v1/Chassis/System.Chassis.1/Power/PowerTrends-1/Last{timeDuration}#HistoryMaxWatts"
+                    ],
+                    "MetricType": "Numeric",
+                    "MinReadingRange": 0,
+                    "Name": "Chassis History Max Power",
+                    "PhysicalContext": "Chassis",
+                    "Precision": 2,
+                    "SensingInterval": "PT1S",
+                    "TimestampAccuracy": "PT1S",
+                    "Units": "Watts",
+                    "Wildcards": [{
+                        "Name": "timeDuration",
+                        "Values": [
+                            "Week",
+                            "Day",
+                            "Month",
+                            "*"
+                        ]
+                    }]
+                }
+
+  - name: AddMetricDefinition
+    data: |
+            {
+                    "Accuracy": 1,
+                    "Calibration": 2,
+                    "Id": "ChassisHistoryAvgPower",
+                    "Implementation": "?????",
+                    "MaxReadingRange": 1000,
+                    "MetricDataType": "Decimal",
+                    "MetricProperties": [
+                        "/redfish/v1/Chassis/System.Chassis.1/Power/PowerTrends-1/Last{timeDuration}#HistoryAverageWatts"
+                    ],
+                    "MetricType": "Numeric",
+                    "MinReadingRange": 0,
+                    "Name": "Average of Chassis Power History",
+                    "PhysicalContext": "Chassis",
+                    "Precision": 2,
+                    "SensingInterval": "PT1S",
+                    "TimestampAccuracy": "PT1S",
+                    "Units": "Watts",
+                    "Wildcards": [{
+                        "Name": "timeDuration",
+                        "Values": [
+                            "Week",
+                            "Day",
+                            "Month",
+                            "*"
+                        ]
+                    }]
+                }
+

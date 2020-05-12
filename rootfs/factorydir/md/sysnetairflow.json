@@ -1,0 +1,13 @@
+{ 
+    "@odata.type": "#MetricDefinition.v1_0_2.MetricDefinition",
+    "Id": "SysNetAirflow",
+    "Name": "System Net Airflow Metric Definition",
+    "Description": "System net airflow",
+    "MetricType": "Numeric",
+    "MetricDataType": "Integer",
+    "Units": "CFM",
+    "Accuracy": 5.0,
+    "SensingInterval": "PT5S",
+    "@odata.context": "/redfish/v1/$metadata#MetricDefinition.MetricDefinition",
+    "@odata.id": "/redfish/v1/TelemetryService/MetricDefinitions/SysNetAirflow"
+} 

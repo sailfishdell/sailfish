@@ -1,0 +1,32 @@
+{
+  "Id": "StorageDiskSMARTData",
+  "Name": "Disk SMART Data Metric Report",
+  "Description": "SSD SMART information",
+  "MetricReportDefinitionEnabled": true,
+  "MetricReportDefinitionType": "Periodic",
+  "Schedule": {"RecurrenceInterval": "PT3600S"},
+  "ReportUpdates": "Overwrite",
+  "SuppressRepeatedMetricValue": false,
+  "ReportActions": ["RedfishEvent", "LogToMetricReportsCollection"],
+  "Metrics": [
+    {"MetricID": "CRCErrorCount", "OEM": {"Dell": {"Source": "smart-sas" }}},
+    {"MetricID": "CommandTimeout"},
+    {"MetricID": "CurrentPendingSectorCount"},
+    {"MetricID": "DriveTemperature"},
+    {"MetricID": "ECCERate"},
+    {"MetricID": "EraseFailCount"},
+    {"MetricID": "ExceptionModeStatus"},
+    {"MetricID": "MediaWriteCount"},
+    {"MetricID": "PercentDriveLifeRemaining"},
+    {"MetricID": "PowerCycleCount"},
+    {"MetricID": "PowerOnHours"},
+    {"MetricID": "ProgramFailCount"},
+    {"MetricID": "ReadErrorRate"},
+    {"MetricID": "ReallocatedBlockCount"},
+    {"MetricID": "UncorrectableErrorCount"},
+    {"MetricID": "UncorrectableLBACount"},
+    {"MetricID": "UnusedReservedBlockCount"},
+    {"MetricID": "UsedReservedBlockCount"},
+    {"MetricID": "VolatileMemoryBackupSourceFailures"}
+  ]
+}

@@ -1,0 +1,84 @@
+#!/bin/bash
+
+# copy this script into the top level directory of sailfish
+
+#set -e
+set -x
+
+idrac_setup() {
+  # for reference: run these commands on idrac to set everything up so you can copy directly using scp and ssh without passwords
+
+   mount --bind /flash/data0/home/root/ /home/root
+   cp /etc/nsswitch.conf /tmp
+   perl -p -i -e 's/avct//g;' /tmp/nsswitch.conf
+   mount --bind /tmp/nsswitch.conf /etc/nsswitch.conf
+   restorecon /etc/nsswitch.conf
+   mount -o remount,exec /mnt/persistent_data/
+   setenforce 0
+   racadm config -g cfgSessionManagement -o cfgSsnMgtSshIdleTimeout 0
+
+
+   # debugcontrol -s REDFISH -l 13
+    #cfgutil command=getattr key='idrac.embedded.1#telemetry.1#istelemetryserviceready'
+
+   systemctl stop telemetrysvc dsm-sa-eventmgr fcgi-rfsql-telemetry
+}
+
+reset
+tmux clear-history
+reset
+
+target=$1
+ssh-copy-id root@${target}
+if [ -z "$target" ]; then
+  echo "specify the iDRAC to update"
+  exit 1
+fi
+
+ssh-copy-id root@${host}
+
+scriptdir=$(cd  $(dirname $0); pwd )
+echo $scriptdir
+
+compiledir=$( ls -d ${scriptdir}/../../../../build/14g-iDRAC-DRB/xrev/tmp/work/armv7a-poky-linux-gnueabi/metric-engine/* | sort | tail -n1 )
+compile=${compiledir}/temp/run.do_compile
+if grep -q "\-tags \"idrac pprof sse pipe\"" $compile 
+then
+	echo "idrac pprof sse and pipe are enabled already in metric-engine"
+else
+	echo "idrac pprof sse and pipe are enabled"
+        sed -E -i 's/-tags \"(.+)\"/-tags \"pprof sse pipe libsqlite3 \"/g' $compile 
+fi
+
+$compile
+
+
+
+
+ssh root@${target} "
+  rm /home/root/metric-engine ||:
+  rm /home/root/metric-engine.yaml ||:
+  killall -QUIT metric-engine ||:
+  "
+scp $compiledir/build/bins/metric-engine $compiledir/source/metric-engine.yaml root@${target}:/home/root/
+echo COPIED 
+
+  # sometimes:
+  #rm /run/telemetryservice/telemetry*db* ||:
+ssh root@${target} "
+  sed -i 's/SSE:.*/SSE: [ \"http::8080\" ]\npipe: [ \/home\/root\/metric-engine.pipe ]\n/g' /home/root/metric-engine.yaml
+  
+"
+
+
+
+ssh root@${target} "
+  systemctl stop metric-engine 
+  rm /var/run/telemetryservice/telemetry_timeseries_database.db*
+  umask 002
+  cfgutil command=setattr key='idrac.embedded.1#telemetry.1#istelemetryserviceready' value=1
+  GOGC=${GOGC:-85}  GODEBUG=${GODEBUG:-gctrace=1,memprofilerate=0} ./metric-engine "
+
+
+exit 0
+

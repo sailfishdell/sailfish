@@ -1,0 +1,28 @@
+{
+    "@odata.type": "#Triggers.v1_1_1.Triggers",
+    "Id": "TMPCpuCriticalTrigger",
+    "Name":"Trigger on CPU temperature  critical errors",
+    "Description": "Trigger when an OEM event is raised",
+    "MetricType": "Discrete",
+    "TriggerActions": [
+        "RedfishMetricReport"
+    ],
+    "EventTriggers": [
+        "iDRAC.1.6.TMP0204",
+        "iDRAC.1.6.TMP0201",
+        "iDRAC.1.6.TMP0203"
+    ],
+    "EventTriggers@odata.count": 3,
+    "Links": {
+    	"MetricReportDefinitions": [
+    	{
+           "@odata.id": "/redfish/v1/TelemetryService/MetricReportDefinitions/CUPS"
+    	},
+    	{
+           "@odata.id": "/redfish/v1/TelemetryService/MetricReportDefinitions/CPUSensor"
+    	}
+    	]
+    },
+    "@odata.context": "/redfish/v1/$metadata#Triggers.Triggers",
+    "@odata.id": "/redfish/v1/TelemetryService/Triggers/TMPCpuCriticalTrigger"
+}

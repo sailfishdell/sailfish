@@ -1,0 +1,15 @@
+{
+  "Id": "CPUSensor",
+  "Name": "CPU Sensor Metric Report",
+  "Description": "CPU Sensor",
+  "MetricReportDefinitionEnabled": true,
+  "MetricReportDefinitionType": "Periodic",
+  "Schedule": {"RecurrenceInterval": "PT60S"},
+  "ReportUpdates": "Overwrite",
+  "SuppressRepeatedMetricValue": false,
+  "ReportActions": ["RedfishEvent", "LogToMetricReportsCollection"],
+  "Metrics": [
+    {"MetricID": "TemperatureReading", "OEM": {"Dell": {"FQDD": "iDRAC.Embedded.1#CPU%Temp"}}},
+    {"MetricID": "TemperatureReading", "OEM": {"Dell": {"FQDD": "CPU.Socket.%"}}}
+  ]
+}

@@ -4,17 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"path"
+	"regexp"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
-  "regexp"
 
 	eh "github.com/looplab/eventhorizon"
 
 	"github.com/superchalupa/sailfish/src/log"
-	"github.com/superchalupa/sailfish/src/looplab/event"
+	"github.com/superchalupa/sailfish/src/ocp/am3"
 	"github.com/superchalupa/sailfish/src/ocp/awesome_mapper2"
 	"github.com/superchalupa/sailfish/src/ocp/eventservice"
 	"github.com/superchalupa/sailfish/src/ocp/model"
@@ -23,362 +21,60 @@ import (
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 )
 
-func in_array(a string, list []string) bool {
-	for _, b := range list {
-		if b == a {
-			return true
-		}
-	}
-	return false
-}
-
-func in_array_index(a string, list []string) int {
-	for i, b := range list {
-		if b == a {
-			return i
-		}
-	}
-	return -1
-}
-
 // Noncompliant FQDDs: RCPUSB, RSPI, RTC, ControlPanel, QuickSync, LCD, LED, Frontpanel
 // As there is no plan to add actual tree paths for noncompliant URIs, noncompliant FQDDs
 // will return the System.Chassis.1 URI.
 // If they are added, frontpanel FQDDS will have to check the message for key words to
 // determine the correct origin paths
 func link_mapper(fqdd string) string {
-  // All FQDD tree paths branch from /redfish/v1/Chassis
+	// All FQDD tree paths branch from /redfish/v1/Chassis
 	ret_string := "/redfish/v1/Chassis/"
 
-  chassis_subparts := []string{`IOM\.Slot`, `System\.Modular`, `iDRAC\.Embedded`, `CMC\.Integrated`, `Fan\.Slot`, `PSU\.Slot`, `Temperature\.NODE_AMBIENT`, `Temperature\.CHASSIS_AMBIENT`, `System\.Chassis`}
-  FQDD_parts := strings.Split(fqdd, "#")
+	chassis_subparts := []string{`IOM\.Slot`, `System\.Modular`, `iDRAC\.Embedded`, `CMC\.Integrated`, `Fan\.Slot`, `PSU\.Slot`, `Temperature\.NODE_AMBIENT`, `Temperature\.CHASSIS_AMBIENT`, `System\.Chassis`}
+	FQDD_parts := strings.Split(fqdd, "#")
 
-  for i, _ := range(FQDD_parts) {
-    // Let right-most FQDD part take precedence, look for matching subparts
-    FQDD_part := FQDD_parts[len(FQDD_parts)-1-i]
-    for _, k := range(chassis_subparts) {
-        // Find matching chassis subpart with any slot numbers
-        re := regexp.MustCompile(k+`\.*\w*`)
-        matched := re.Find([]byte(FQDD_part))
-        if matched == nil {
-          continue
-        }
-        FQDD_matched := string(matched)
+	for i, _ := range FQDD_parts {
+		// Let right-most FQDD part take precedence, look for matching subparts
+		FQDD_part := FQDD_parts[len(FQDD_parts)-1-i]
+		for _, k := range chassis_subparts {
+			// Find matching chassis subpart with any slot numbers
+			re := regexp.MustCompile(k + `\.*\w*`)
+			matched := re.Find([]byte(FQDD_part))
+			if matched == nil {
+				continue
+			}
+			FQDD_matched := string(matched)
 
-        // Substitute matches for corrected versions
-        if FQDD_matched == "CMC.Integrated.0" {
-          FQDD_matched = "CMC.Integrated.1"
-        } else if k == `iDRAC\.Embedded` {
-          FQDD_matched = strings.Replace(FQDD_matched, "iDRAC.Embedded", "System.Modular", -1)
-        }
+			// Substitute matches for corrected versions
+			if FQDD_matched == "CMC.Integrated.0" {
+				FQDD_matched = "CMC.Integrated.1"
+			} else if k == `iDRAC\.Embedded` {
+				FQDD_matched = strings.Replace(FQDD_matched, "iDRAC.Embedded", "System.Modular", -1)
+			}
 
-        // Fans, PSUs, and temperatures have specific paths off System.Chassis.1
-        if k == `Fan\.Slot` {
-          ret_string += "System.Chassis.1/Sensors/Fans/" + FQDD_matched
-        } else if k == `PSU\.Slot` {
-          ret_string += "System.Chassis.1/Sensors/PowerSupplies/" + FQDD_matched
-        } else if k == `Temperature\.NODE_AMBIENT` || k == `Temperature\.CHASSIS_AMBIENT` {
-          ret_string += "System.Chassis.1/Sensors/Temperatures/System.Chassis.1%23" + FQDD_matched
-        } else {
-          ret_string += FQDD_matched
-        }
+			// Fans, PSUs, and temperatures have specific paths off System.Chassis.1
+			if k == `Fan\.Slot` {
+				ret_string += "System.Chassis.1/Sensors/Fans/" + FQDD_matched
+			} else if k == `PSU\.Slot` {
+				ret_string += "System.Chassis.1/Sensors/PowerSupplies/" + FQDD_matched
+			} else if k == `Temperature\.NODE_AMBIENT` || k == `Temperature\.CHASSIS_AMBIENT` {
+				ret_string += "System.Chassis.1/Sensors/Temperatures/System.Chassis.1%23" + FQDD_matched
+			} else {
+				ret_string += FQDD_matched
+			}
 
-        // If a matching subpart with valid tree path is found, return
-        goto early_out
-    }
-  }
-  // For all other FQDDs, default to System.Chassis.1 path (including all noncompliant URIs)
-  ret_string += "System.Chassis.1"
+			// If a matching subpart with valid tree path is found, return
+			goto early_out
+		}
+	}
+	// For all other FQDDs, default to System.Chassis.1 path (including all noncompliant URIs)
+	ret_string += "System.Chassis.1"
 
 early_out:
 	return ret_string
 }
 
-func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.CommandHandler, d *domain.DomainObjects) {
-	MAX_LOGS := 3000
-
-	awesome_mapper2.AddFunction("addlclog", func(args ...interface{}) (interface{}, error) {
-		logUri, ok := args[0].(string)
-		if !ok {
-			logger.Crit("Mapper configuration error: uri not passed as string", "args[0]", args[0])
-			return nil, errors.New("mapper configuration error: uri not passed as string")
-		}
-
-		logEntry, ok := args[1].(*LogEventData)
-		if !ok {
-			logger.Crit("Mapper configuration error: log event data not passed", "args[1]", args[1], "TYPE", fmt.Sprintf("%T", args[1]))
-			return nil, errors.New("mapper configuration error: log event data not passed")
-		}
-
-		uuid := eh.NewUUID()
-		uri := fmt.Sprintf("%s/%d", logUri, logEntry.Id)
-
-		timeF, err := strconv.ParseFloat(logEntry.Created, 64)
-		if err != nil {
-			logger.Debug("LCLOG: Time information can not be parsed", "time", logEntry.Created, "err", err, "set time to", 0)
-			timeF = 0
-		}
-		createdTime := time.Unix(int64(timeF), 0)
-		cTime := createdTime.Format("2006-01-02T15:04:05-07:00")
-
-		severity := logEntry.Severity
-		if logEntry.Severity == "Informational" {
-			severity = "OK"
-		}
-
-		ch.HandleCommand(
-			context.Background(),
-			&domain.CreateRedfishResource{
-				ID:          uuid,
-				ResourceURI: uri,
-				Type:        "#LogEntry.v1_0_2.LogEntry",
-				Context:     "/redfish/v1/$metadata#LogEntry.LogEntry",
-				Privileges: map[string]interface{}{
-					"GET": []string{"Login"},
-				},
-				Properties: map[string]interface{}{
-					"Created":     cTime,
-					"Description": logEntry.Name,
-					"Name":        logEntry.Name,
-					"EntryType":   logEntry.EntryType,
-					"Id":          logEntry.Id,
-					"Links": map[string]interface{}{
-						"OriginOfCondition": map[string]interface{}{
-							"@odata.id": link_mapper(logEntry.FQDD),
-						},
-					},
-					"MessageArgs@odata.count": len(logEntry.MessageArgs),
-					"MessageArgs":             logEntry.MessageArgs,
-					"Message":                 logEntry.Message,
-					"MessageId":               logEntry.MessageID,
-					"Oem": map[string]interface{}{
-						"Dell": map[string]interface{}{
-							"@odata.type": "#DellLogEntry.v1_0_0.LogEntrySummary",
-							"Category":    logEntry.Category,
-							"FQDD":        logEntry.FQDD,
-						}},
-					"OemRecordFormat": "Dell",
-					"Severity":        severity,
-					"Action":          logEntry.Action,
-				}})
-
-		uriList := d.FindMatchingURIs(func(uri string) bool { return path.Dir(uri) == logUri })
-
-		if len(uriList) > MAX_LOGS {
-			// dont need to sort it until we know we are too long
-			sort.Slice(uriList, func(i, j int) bool {
-				idx_i, _ := strconv.Atoi(path.Base(uriList[i]))
-				idx_j, _ := strconv.Atoi(path.Base(uriList[j]))
-				return idx_i > idx_j
-			})
-
-			logger.Debug("too many logs, trimming", "len", len(uriList))
-			go func(uriList []string) {
-				for _, uri := range uriList {
-					id, ok := d.GetAggregateIDOK(uri)
-					if ok {
-						ev := event.NewSyncEvent(domain.RedfishResourceRemoved, &domain.RedfishResourceRemovedData{
-							ID:          id,
-							ResourceURI: uri,
-						}, time.Now())
-						ev.Add(1)
-						d.EventBus.PublishEvent(context.Background(), ev)
-						ev.Wait()
-					}
-				}
-			}(uriList[MAX_LOGS:])
-		}
-
-		return true, nil
-	})
-
-	awesome_mapper2.AddFunction("clearuris", func(args ...interface{}) (interface{}, error) {
-		logUri, ok := args[0].(string)
-		if !ok {
-			logger.Crit("Mapper configuration error: uri not passed as string", "args[0]", args[0])
-			return nil, errors.New("mapper configuration error: uri not passed as string")
-		}
-
-		logger.Debug("Clearing all uris within base_uri", "base_uri", logUri)
-
-		go func() {
-			uriList := d.FindMatchingURIs(func(uri string) bool { return path.Dir(uri) == logUri })
-			for _, uri := range uriList {
-				id, ok := d.GetAggregateIDOK(uri)
-				if ok {
-					ev := event.NewSyncEvent(domain.RedfishResourceRemoved, &domain.RedfishResourceRemovedData{
-						ID:          id,
-						ResourceURI: uri,
-					}, time.Now())
-					ev.Add(1)
-					d.EventBus.PublishEvent(context.Background(), ev)
-					ev.Wait()
-
-				}
-			}
-		}()
-
-		return nil, nil
-	})
-
-	// Add FaultRemoveEntry to tombstones if processed before FaultAddEntry in FIFO ordering
-	fault_lim := 10
-	var tombstones []string
-	awesome_mapper2.AddFunction("removefaultentry", func(args ...interface{}) (interface{}, error) {
-		logUri, ok := args[0].(string)
-		if !ok {
-			logger.Crit("Mapper configuration error: uri not passed as string", "args[0]", args[0])
-			return nil, errors.New("mapper configuration error: uri not passed as string")
-		}
-		faultEntry, ok := args[1].(*FaultEntryRmData)
-		if !ok {
-			logger.Crit("Mapper configuration error: log event data not passed", "args[1]", args[1], "TYPE", fmt.Sprintf("%T", args[1]))
-			return nil, errors.New("mapper configuration error: log event data not passed")
-		}
-
-		uri := fmt.Sprintf("%s/%s", logUri, faultEntry.Name)
-		//fmt.Printf("%s/%s", logUri, faultEntry.Name)
-
-		id, ok := d.GetAggregateIDOK(uri)
-		if ok {
-			ch.HandleCommand(context.Background(), &domain.RemoveRedfishResource{ID: id})
-		} else {
-
-			if len(tombstones) == fault_lim {
-				tombstones = tombstones[1:]
-			}
-
-			if !in_array(faultEntry.Name, tombstones) {
-				tombstones = append(tombstones, faultEntry.Name)
-			}
-
-		}
-		return true, nil
-	})
-
-	awesome_mapper2.AddFunction("addfaultentry", func(args ...interface{}) (interface{}, error) {
-		logUri, ok := args[0].(string)
-		//fmt.Printf("%s", logUri)
-		if !ok {
-			logger.Crit("Mapper configuration error: uri not passed as string", "args[0]", args[0])
-			return nil, errors.New("mapper configuration error: uri not passed as string")
-		}
-
-		faultEntry, ok := args[1].(*FaultEntryAddData)
-		if !ok {
-			logger.Crit("Mapper configuration error: log event data not passed", "args[1]", args[1], "TYPE", fmt.Sprintf("%T", args[1]))
-			return nil, errors.New("mapper configuration error: log event data not passed")
-		}
-
-		// check if fault remove event is already received.  Can return
-		i := in_array_index(faultEntry.Name, tombstones)
-
-		if i != -1 {
-			fl := len(tombstones) - 1
-			for n := len(tombstones) - 1; n > i && n != 0; n -= 1 {
-				tombstones[n-1] = tombstones[n]
-			}
-
-			tombstones[fl] = ""
-			tombstones = tombstones[:fl]
-			return nil, nil
-		}
-
-		timeF, err := strconv.ParseFloat(faultEntry.Created, 64)
-		if err != nil {
-			logger.Debug("Mapper configuration error: Time information can not be parsed", "time", faultEntry.Created, "err", err, "set time to", 0)
-			timeF = 0
-		}
-		createdTime := time.Unix(int64(timeF), 0)
-		cTime := createdTime.Format("2006-01-02T15:04:05-07:00")
-
-		uuid := eh.NewUUID()
-		uri := fmt.Sprintf("%s/%s", logUri, faultEntry.Name)
-		//fmt.Printf("%s/%s", logUri, faultEntry.Name)
-
-		// when mchars is restarted, it clears faults and expects old faults to be recreated.
-		// skip re-creating old faults if this happens.
-		aggID, ok := d.GetAggregateIDOK(uri)
-		if ok {
-			logger.Info("URI already exists, skipping add log", "aggID", aggID, "uri", uri)
-			// not returning error because that will unnecessarily freak out govaluate when there really isn't an error we care about at that level
-			return nil, nil
-		}
-
-		ch.HandleCommand(
-			context.Background(),
-			&domain.CreateRedfishResource{
-				ID:          uuid,
-				ResourceURI: uri,
-				Type:        "#LogEntry.LogEntry",
-				Plugin:      "ECFault",
-				Context:     "/redfish/v1/$metadata#LogEntry.LogEntry",
-				Headers: map[string]string{
-					"Location": uri,
-				},
-				Privileges: map[string]interface{}{
-					"GET":    []string{"Login"},
-					"DELETE": []string{"ConfigureManager"},
-				},
-				Properties: map[string]interface{}{
-					"Created":                 cTime,
-					"Description":             "FaultList Entry " + faultEntry.FQDD,
-					"Name":                    "FaultList Entry " + faultEntry.FQDD,
-					"EntryType":               faultEntry.EntryType,
-					"Id":                      faultEntry.Name,
-					"MessageArgs":             faultEntry.MessageArgs,
-					"MessageArgs@odata.count": len(faultEntry.MessageArgs),
-					"Message":                 faultEntry.Message,
-					"MessageId":               faultEntry.MessageID,
-					"Category":                faultEntry.Category,
-					"Oem": map[string]interface{}{
-						"Dell": map[string]interface{}{
-							"@odata.type": "#DellLogEntry.v1_0_0.LogEntrySummary",
-							"FQDD":        faultEntry.FQDD,
-							"SubSystem":   faultEntry.SubSystem,
-						}},
-					"OemRecordFormat": "Dell",
-					"Severity":        faultEntry.Severity,
-					"Action":          faultEntry.Action,
-					"Links":           map[string]interface{}{},
-				}})
-
-		return true, nil
-	})
-
-	awesome_mapper2.AddFunction("firealert", func(args ...interface{}) (interface{}, error) {
-		logEntry, ok := args[0].(*LogEventData)
-		if !ok {
-			logger.Crit("Mapper configuration error: log event data not passed", "args[1]", args[1], "TYPE", fmt.Sprintf("%T", args[1]))
-			return nil, errors.New("mapper configuration error: log event data not passed")
-		}
-
-		timeF, err := strconv.ParseFloat(logEntry.Created, 64)
-		if err != nil {
-			logger.Debug("Mapper configuration error: Time information can not be parsed", "time", logEntry.Created, "err", err, "set time to", 0)
-			timeF = 0
-		}
-		createdTime := time.Unix(int64(timeF), 0)
-		cTime := createdTime.Format("2006-01-02T15:04:05-07:00")
-
-		//Create Alert type event:
-
-		d.EventBus.PublishEvent(context.Background(),
-			eh.NewEvent(eventservice.RedfishEvent, &eventservice.RedfishEventData{
-				EventType:      "Alert",
-				EventId:        logEntry.EventId,
-				EventTimestamp: cTime,
-				Severity:       logEntry.Severity,
-				Message:        logEntry.Message,
-				MessageId:      logEntry.MessageID,
-				MessageArgs:    logEntry.MessageArgs,
-				//TODO MSM BUG: OriginOfCondition for events has to be a string or will be rejected
-				OriginOfCondition: logEntry.FQDD,
-			}, time.Now()))
-
-		return true, nil
-	})
-
+func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, am3Svc am3.Service, ch eh.CommandHandler, d *domain.DomainObjects) {
 	awesome_mapper2.AddFunction("health_alert", func(args ...interface{}) (interface{}, error) {
 		ss, ok := args[0].(string)
 		if !ok {
@@ -412,38 +108,6 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 		return true, nil
 	})
 
-	awesome_mapper2.AddFunction("has_swinv_model", func(args ...interface{}) (interface{}, error) {
-		//fmt.Printf("Check to see if the new resource has an 'swinv' model\n")
-
-		resourceURI, ok := args[0].(string)
-		if !ok || resourceURI == "" {
-			//fmt.Printf("has_swinv: no resource uri passed or not string\n")
-			return false, nil
-		}
-
-		//fmt.Printf("has_swinv URI (%s)\n", resourceURI)
-
-		v, err := domain.InstantiatePlugin(domain.PluginType(resourceURI))
-		if err != nil || v == nil {
-			//fmt.Printf("has_swinv couldn't instantiate view for URI (%s): %s\n", resourceURI, err)
-			return false, nil
-		}
-
-		vw, ok := v.(*view.View)
-		if !ok {
-			//fmt.Printf("has_swinv instantiated non-view\n")
-			return false, nil
-		}
-
-		mdl := vw.GetModel("swinv")
-		if mdl == nil {
-			//fmt.Printf("has_swinv NO SWINV MODEL (not an error)\n")
-			return false, nil
-		}
-
-		return true, nil
-	})
-
 	var syncModels func(m *model.Model, updates []model.Update)
 	type newfirm struct {
 		uri  string
@@ -453,25 +117,33 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 	trigger := make(chan struct{})
 	firmwareInventoryViews := map[string]*view.View{}
 
-	awesome_mapper2.AddFunction("add_swinv", func(args ...interface{}) (interface{}, error) {
-		resourceURI, ok := args[0].(string)
-		if !ok || resourceURI == "" {
-			return false, nil
+	am3Svc.AddEventHandler("AddSwinv", domain.RedfishResourceCreated, func(event eh.Event) {
+		data, ok := event.Data().(*domain.RedfishResourceCreatedData)
+		if !ok {
+			logger.Error("Redfish Resource Created event did not match", "type", event.EventType, "data", event.Data())
+			return
 		}
+
+		resourceURI := format_uri(data.ResourceURI)
 
 		v, err := domain.InstantiatePlugin(domain.PluginType(resourceURI))
 		if err != nil || v == nil {
-			return false, nil
+			return
 		}
 
 		vw, ok := v.(*view.View)
 		if !ok {
-			return false, nil
+			return
+		}
+
+		mdl := vw.GetModel("swinv")
+		if mdl == nil {
+			return
 		}
 
 		mdlMap := vw.GetModels("swinv")
 		if len(mdlMap) == 0 {
-			return false, nil
+			return
 		}
 
 		mdls := []*model.Model{}
@@ -482,8 +154,6 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 		}
 
 		newchan <- newfirm{resourceURI, mdls}
-
-		return true, nil
 	})
 
 	syncModels = func(m *model.Model, updates []model.Update) {
@@ -495,6 +165,8 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 
 	go func() {
 		swinvList := map[string][]*model.Model{}
+		uris_in_use := map[string]bool{}
+
 		for {
 
 			// Wait for this thread to be kicked
@@ -514,6 +186,11 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 
 			fqdd_mappings := map[string][]string{}
 			uri_mappings := map[string][]string{}
+
+			// reset all URIs to be "not in use". If they are still in use, then
+			// they will be marked "true" while each model is being scanned. Any
+			// URIs which are still marked as "false" at the end will be deleted.
+			set_all_in_map_bool(uris_in_use, false)
 
 			// scan through each model and build our new inventory uris
 			// need to iterate through models.  With the same work flow below.. When iteration is complete... need to add uris and fqdds to model.
@@ -601,7 +278,7 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 					}
 
 					if _, ok := firmwareInventoryViews[compVerTuple]; !ok {
-						_, vw, _ := instantiateSvc.Instantiate("firmware_instance", map[string]interface{}{
+						_, vw, err := instantiateSvc.Instantiate("firmware_instance", map[string]interface{}{
 							"compVerTuple": compVerTuple,
 							"name":         name,
 							"version":      version,
@@ -609,11 +286,26 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 							"installDate":  installDate,
 							"id":           class,
 						})
+
+						// In the rare event that instantiate does not work, make sure not to add
+						// the compVerTuple to the overall firmwareInventoryViews so that instantiate
+						// can be retried.
+						if err != nil {
+							logger.Crit(compVerTuple + " swinv failed to instantiate: " + err.Error())
+							continue
+						}
+
 						//fmt.Printf("add to list ---------> INSTANTIATED: %s\n", vw.GetURI())
 						firmwareInventoryViews[compVerTuple] = vw
 
+						// Mark URI as "in use" so that it is not deleted during clean up
+						uris_in_use[vw.GetURI()] = true
+
 					} else {
 						vw := firmwareInventoryViews[compVerTuple]
+
+						// Mark URI as "in use" so that it is not deleted during clean up
+						uris_in_use[vw.GetURI()] = true
 
 						firmMdl := vw.GetModel("default")
 
@@ -671,6 +363,22 @@ func initLCL(logger log.Logger, instantiateSvc *testaggregate.Service, ch eh.Com
 				vw := firmwareInventoryViews[compVerTuple]
 				firmMdl := vw.GetModel("default")
 				firmMdl.UpdateProperty("related_list", arr)
+			}
+
+			// Clean up any URIs which are no longer in use
+			for uri, is_used := range uris_in_use {
+				if !is_used {
+					logger.Crit(uri + " swinv is no longer in use, removing")
+
+					// Since the URI is no longer in use, delete it.
+					if id, ok := d.GetAggregateIDOK(uri); ok {
+						d.CommandHandler.HandleCommand(context.Background(), &domain.RemoveRedfishResource{ID: id})
+						delete(uris_in_use, uri)
+						delete(firmwareInventoryViews, split_string_index(uri, "/", -1))
+					} else {
+						logger.Crit(uri + " swinv can't be deleted, could not find ID")
+					}
+				}
 			}
 		}
 	}()

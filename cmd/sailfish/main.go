@@ -19,14 +19,16 @@ import (
 
 	"github.com/gorilla/mux"
 
-	eh "github.com/looplab/eventhorizon"
-
 	log "github.com/superchalupa/sailfish/src/log"
 	applog "github.com/superchalupa/sailfish/src/log15adapter"
 
-	"github.com/superchalupa/sailfish/src/http_inject"
+	eh "github.com/looplab/eventhorizon"
+	"github.com/superchalupa/sailfish/src/fileutils"
 	"github.com/superchalupa/sailfish/src/http_redfish_sse"
-	"github.com/superchalupa/sailfish/src/http_sse"
+	"github.com/superchalupa/sailfish/src/httpinject"
+	"github.com/superchalupa/sailfish/src/httpsse"
+	"github.com/superchalupa/sailfish/src/ocp/telemetryservice"
+	"github.com/superchalupa/sailfish/src/rawjsonstream"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
 
 	// cert gen
@@ -39,12 +41,9 @@ import (
 	"github.com/superchalupa/sailfish/src/ocp/session"
 )
 
-type implementationFn func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *sync.RWMutex, ch eh.CommandHandler, eb eh.EventBus, d *domain.DomainObjects) Implementation
+type implementationFn func(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, viperMu *sync.RWMutex, d *domain.DomainObjects) interface{}
 
-var implementations map[string]implementationFn = map[string]implementationFn{}
-
-type Implementation interface {
-}
+var implementations = map[string]implementationFn{}
 
 func main() {
 	flag.StringSliceP("listen", "l", []string{}, "Listen address.  Formats: (http:[ip]:nn, https:[ip]:port)")
@@ -68,6 +67,16 @@ func main() {
 		panic(fmt.Sprintf("Could not read config file: %s", err))
 	}
 
+	// Local config for running from the build tree
+	if fileutils.FileExists("local-redfish.yaml") {
+		fmt.Fprintf(os.Stderr, "Reading local-redfish.yaml config\n")
+		cfgMgr.SetConfigFile("local-redfish.yaml")
+		if err := cfgMgr.MergeInConfig(); err != nil {
+			fmt.Fprintf(os.Stderr, "Error reading local config file: %s\n", err)
+			panic(fmt.Sprintf("Error reading local config file: %s", err))
+		}
+	}
+
 	// Defaults
 	cfgMgr.SetDefault("listen", []string{"https::8443"})
 	cfgMgr.SetDefault("main.server_name", "mockup")
@@ -78,7 +87,7 @@ func main() {
 
 	logger := applog.InitializeApplicationLogging("")
 
-	domainObjs, _ := domain.NewDomainObjects()
+	domainObjs, _ := domain.NewDomainObjects(domain.WithLogger(logger))
 	// redo this later to observe events
 	//domainObjs.EventPublisher.AddObserver(logger)
 	domainObjs.CommandHandler = makeLoggingCmdHandler(logger, domainObjs.CommandHandler)
@@ -89,8 +98,7 @@ func main() {
 	// Handle the API.
 	m := mux.NewRouter()
 	loggingHTTPHandler := makeLoggingHTTPHandler(logger, m)
-
-	injectSvc := http_inject.New(logger, domainObjs)
+	injectSvc := httpinject.New(logger, domainObjs)
 	injectSvc.Start()
 
 	// per spec: hardcoded output for /redfish to list versions supported.
@@ -116,8 +124,11 @@ func main() {
 			basicauth.MakeHandlerFunc(chainAuth,
 				chainAuth("UNKNOWN", []string{"Unauthenticated"}))))
 
+	nofilterfn := func(ev eh.Event) bool { return true }
 	// SSE
-	chainAuthSSE := func(u string, p []string) http.Handler { return http_sse.NewSSEHandler(domainObjs, logger, u, p) }
+	chainAuthSSE := func(u string, p []string) http.Handler {
+		return httpsse.NewSSEHandler(domainObjs, logger, u, p, nofilterfn)
+	}
 	m.Path("/events").Methods("GET").HandlerFunc(
 		session.MakeHandlerFunc(logger, domainObjs.EventBus, domainObjs, chainAuthSSE, basicauth.MakeHandlerFunc(chainAuthSSE, chainAuthSSE("UNKNOWN", []string{"Unauthenticated"}))))
 
@@ -125,15 +136,21 @@ func main() {
 	chainAuthRFSSE := func(u string, p []string) http.Handler {
 		return http_redfish_sse.NewRedfishSSEHandler(domainObjs, logger, u, p)
 	}
-	m.Path("/redfish/v1/SSE").Methods("GET").HandlerFunc(
+	m.Path("/redfish/v1/EventService/SSE").Methods("GET").HandlerFunc(
 		session.MakeHandlerFunc(logger, domainObjs.EventBus, domainObjs, chainAuthRFSSE, basicauth.MakeHandlerFunc(chainAuthRFSSE, chainAuthRFSSE("UNKNOWN", []string{"Unauthenticated"}))))
 
-	// backend command handling
+	MetricFilterfn := func(ev eh.Event) bool {
+		return ev.EventType() == telemetryservice.MetricValueEvent
+	}
+
+	chainAuthMetricSSE := func(u string, p []string) http.Handler {
+		return httpsse.NewSSEHandler(domainObjs, logger, u, p, MetricFilterfn)
+	}
+	m.Path("/redfish/v1/TelemetryService/SSE").Methods("GET").HandlerFunc(
+		session.MakeHandlerFunc(logger, domainObjs.EventBus, domainObjs, chainAuthMetricSSE, basicauth.MakeHandlerFunc(chainAuthMetricSSE, chainAuthMetricSSE("UNKNOWN", []string{"Unauthenticated"}))))
+
+	//// backend command handling
 	internalHandlerFunc := domainObjs.GetInternalCommandHandler(ctx)
-
-	// most-used command is event inject, specify that manually to avoid some regexp memory allocations
-
-	m.Path("/api/Event:Inject").Methods("POST").HandlerFunc(injectSvc.GetHandlerFunc())
 
 	// All of the /redfish apis
 	m.PathPrefix("/redfish/").Methods("GET", "PUT", "POST", "PATCH", "DELETE", "HEAD", "OPTIONS").HandlerFunc(handlerFunc)
@@ -142,7 +159,7 @@ func main() {
 	m.PathPrefix("/schemas/v1/").Handler(http.StripPrefix("/schemas/v1/", http.FileServer(http.Dir("./v1/schemas/"))))
 
 	// all the other command apis.
-	 m.PathPrefix("/api/{command}").Methods("POST").Handler(internalHandlerFunc)
+	m.PathPrefix("/api/{command}").Methods("POST").Handler(internalHandlerFunc)
 
 	// debugging (localhost only)
 	m.Path("/status").Handler(domainObjs.DumpStatus())
@@ -152,7 +169,7 @@ func main() {
 	if !ok {
 		panic("could not load implementation specified in main.server_name: " + cfgMgr.GetString("main.server_name"))
 	}
-	implFn(ctx, logger, cfgMgr, &cfgMgrMu, domainObjs.CommandHandler, domainObjs.EventBus, domainObjs)
+	implFn(ctx, logger, cfgMgr, &cfgMgrMu, domainObjs)
 
 	tlscfg := &tls.Config{
 		MinVersion: tls.VersionTLS12,
@@ -203,6 +220,7 @@ func main() {
 		case strings.HasPrefix(listen, "pprof:"):
 			pprofListener := runpprof(logger, addShutdown, listen)
 			go pprofListener()
+
 		case strings.HasPrefix(listen, "http:"):
 			// HTTP protocol listener
 			// "https:[addr]:port
@@ -250,6 +268,11 @@ func main() {
 			}(listen, s, unixListener)
 			addShutdown(listen, s)
 
+		case strings.HasPrefix(listen, "pipeinput:"):
+			pipeName := strings.TrimPrefix(listen, "pipeinput:")
+			go rawjsonstream.StartPipeHandler(logger, pipeName, domainObjs.EventBus)
+			logger.Crit("pipe listener started", "path", pipeName)
+
 		case strings.HasPrefix(listen, "https:"):
 			// HTTPS protocol listener
 			// "https:[addr]:port,certfile,keyfile
@@ -276,6 +299,15 @@ func main() {
 
 	logger.Debug("Listening", "module", "main", "addresses", fmt.Sprintf("%v\n", listeners))
 	injectSvc.Ready()
+
+	// start periodically forcing OS memory free
+	go func() {
+		t := time.Tick(time.Second * 30)
+		for {
+			<-t
+			debug.FreeOSMemory()
+		}
+	}()
 
 	// wait until we get an interrupt (CTRL-C)
 	intr := make(chan os.Signal, 1)
@@ -357,14 +389,4 @@ func iterInterfaceIPAddrs(logger log.Logger, fn func(net.IP)) {
 			fn(ip)
 		}
 	}
-}
-
-func init() {
-	go func() {
-		t := time.Tick(time.Second * 30)
-		for {
-			<-t
-			debug.FreeOSMemory()
-		}
-	}()
 }

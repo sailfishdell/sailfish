@@ -1,0 +1,18 @@
+{ 
+    "@odata.type": "#MetricDefinition.v1_0_2.MetricDefinition",
+    "Id": "FcStatOSDriverState",
+    "Name": "FC OS Driver State Metric Definition",
+    "Description": "This property indicates the OS driver state",
+    "MetricType": "Discrete",
+    "MetricDataType": "Enumeration",
+    "SensingInterval": "PT60S",
+    "DiscreteValues": [ 
+        "Other", 
+        "Not Applicable", 
+        "Non-operational", 
+        "Operational", 
+        "Unknown" 
+    ], 
+    "@odata.context": "/redfish/v1/$metadata#MetricDefinition.MetricDefinition",
+    "@odata.id": "/redfish/v1/TelemetryService/MetricDefinitions/FcStatOSDriverState"
+} 

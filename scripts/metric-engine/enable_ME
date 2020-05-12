@@ -1,0 +1,19 @@
+#!/bin/sh
+
+host=$1
+ssh-copy-id root@${host}
+if [ -z "$host" ]; then
+  echo "specify the iDRAC to update"
+  exit 1
+fi
+
+ssh-copy-id root@${host}
+
+ssh root@${host} "
+  systemctl stop metric-engine
+  rm /var/run/telemetryservice/telemetry_timeseries_database.db*
+  cfgutil command=setattr key='idrac.embedded.1#telemetry.1#istelemetryserviceready' value=1
+  systemctl start metric-engine
+  systemctl restart dsm-sa-eventmgr
+  systemctl restart  fcgi-rfsql-telemetry
+"

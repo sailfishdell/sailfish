@@ -1,0 +1,67 @@
+run:
+  skip_dirs:
+    - src
+  modules-download-mode: vendor
+
+linters:
+  enable:
+    - bodyclose
+    - deadcode
+    - depguard
+    - dogsled
+    - dupl
+    - errcheck
+    - funlen
+    - gochecknoinits
+    - goconst
+    - gocritic
+    - gocyclo
+    - gofmt
+    - goimports
+    - golint
+    - gomnd
+    - goprintffuncname
+    - gosec
+    - gosimple
+    - govet
+    - ineffassign
+    - interfacer
+    - lll
+    - misspell
+    - nakedret
+    - rowserrcheck
+    - scopelint
+    - staticcheck
+    - structcheck
+    - stylecheck
+    - typecheck
+    - unconvert
+    - unparam
+    - unused
+    - varcheck
+    - whitespace
+    - gocognit
+    - gochecknoglobals
+    - maligned
+    - prealloc
+
+linters-settings:
+  lll:
+    # max line length, lines longer will be reported.
+    line-length: 150
+    # '\t' is counted as 1 character by default, and can be changed with the tab-width option
+    tab-width: 2
+  gomnd:
+    settings:
+      mnd:
+        checks: argument,case,condition,return,operation,assign
+
+  maligned:
+    # print struct with more effective memory layout or not, false by default
+    suggest-new: true
+
+
+issues:
+  exclude:
+    # gomnd complains about '1' as a magic number, silence that as it's usually ok
+    - "Magic number: 1[^0-9]"

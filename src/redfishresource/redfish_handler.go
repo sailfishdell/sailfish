@@ -306,8 +306,8 @@ func (rh *RedfishHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	data, ok := event.Data().(*HTTPCmdProcessedData)
 	if !ok {
-		rh.logger.Warn("Did not get an HTTPCmdProcessedData event, that's wierd.", "url", r.URL.Path, "event", event.Data())
-		http.Error(w, "Did not get an HTTPCmdProcessedData event, that's wierd", http.StatusInternalServerError)
+		rh.logger.Warn("Did not get an HTTPCmdProcessedData event, that's weird.", "url", r.URL.Path, "event", event.Data())
+		http.Error(w, "Did not get an HTTPCmdProcessedData event, that's weird", http.StatusInternalServerError)
 		return
 	}
 

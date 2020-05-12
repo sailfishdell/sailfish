@@ -1,0 +1,12 @@
+{ 
+    "@odata.type": "#MetricDefinition.v1_0_2.MetricDefinition",
+    "Id": "CPUC0ResidencyLow",
+    "Name": "CPU C0 Residency Low Metric Definition",
+    "Description": "32 LSBs of the 64-bit counter containing the aggregate C0 residency count from all the cores",
+    "MetricType": "Counter",
+    "MetricDataType": "Integer",
+    "Accuracy": 0.0,
+    "SensingInterval": "PT5S",
+    "@odata.context": "/redfish/v1/$metadata#MetricDefinition.MetricDefinition",
+    "@odata.id": "/redfish/v1/TelemetryService/MetricDefinitions/CPUC0ResidencyLow"
+} 

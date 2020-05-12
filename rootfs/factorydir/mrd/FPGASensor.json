@@ -1,0 +1,14 @@
+{
+  "Id": "FPGASensor",
+  "Name": "FPGA Temperature Sensors Metric Report",
+  "Description": "FPGA(Field Programmable Gate Arrays) Temperature sensors",
+  "MetricReportDefinitionEnabled": true,
+  "MetricReportDefinitionType": "Periodic",
+  "Schedule": {"RecurrenceInterval": "PT60S"},
+  "ReportUpdates": "Overwrite",
+  "SuppressRepeatedMetricValue": false,
+  "ReportActions": ["RedfishEvent", "LogToMetricReportsCollection"],
+  "Metrics": [
+    {"MetricID": "TemperatureReading", "OEM": {"Dell": {"Source": "fpga-sensor"}}}
+  ]
+}

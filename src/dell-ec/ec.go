@@ -45,7 +45,7 @@ func (o *ocp) ConfigChangeHandler() { o.configChangeHandler() }
 
 func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, d *domain.DomainObjects) *ocp {
 
-	logger = logger.New("module", "ec")
+	logger = log.With(logger, "module", "ec")
 	self := &ocp{}
 	ch := d.CommandHandler
 	eb := d.EventBus
@@ -57,19 +57,22 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	uploadSvc := uploadhandler.StartService(ctx, logger, d)
 	am2Svc, _ := awesome_mapper2.StartService(ctx, logger, eb, ch, d)
 	am3Svc, _ := am3.StartService(ctx, logger, "am3 base service", d)
-	addAM3Functions(logger.New("module", "ec_am3_functions"), am3Svc, d)
+	addAM3Functions(log.With(logger, "module", "ec_am3_functions"), am3Svc, d, ctx)
 
+	// here introduce new initial event handling
 	ardumpSvc, _ := attributes.StartService(ctx, logger, d)
 	pumpSvc := NewPumpActionSvc(ctx, logger, d)
 
 	// the package for this is going to change, but this is what makes the various mappers and view functions available
 	instantiateSvc := testaggregate.New(logger, cfgMgr, cfgMgrMu, d, am3Svc)
-	evtSvc := eventservice.New(ctx, cfgMgr, cfgMgrMu, d, instantiateSvc, actionSvc, uploadSvc)
+	evtSvc := eventservice.New(ctx, logger, cfgMgr, cfgMgrMu, d, instantiateSvc, actionSvc, uploadSvc)
+
 	testaggregate.RegisterWithURI(instantiateSvc)
 	testaggregate.RegisterPublishEvents(instantiateSvc, evtSvc)
 	testaggregate.RegisterAM2(instantiateSvc, am2Svc)
 	testaggregate.RegisterPumpAction(instantiateSvc, actionSvc, pumpSvc)
 	testaggregate.RegisterPumpUpload(instantiateSvc, uploadSvc, pumpSvc)
+
 	ar_mapper2.RegisterARMapper(instantiateSvc, arService)
 	attributes.RegisterController(instantiateSvc, ardumpSvc)
 	stdmeta.RegisterFormatters(instantiateSvc, d)
@@ -82,7 +85,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	attributes.RegisterAggregate(instantiateSvc)
 	update_service.RegisterAggregate(instantiateSvc)
 	task_service.RegisterAggregate(instantiateSvc)
-	task_service.InitTask(logger, instantiateSvc, ch, ctx)
+	task_service.InitTask(logger, instantiateSvc, am3Svc, ch, ctx)
 	fans.RegisterAggregate(instantiateSvc)
 	RegisterAggregate(instantiateSvc)
 	RegisterIOMAggregate(instantiateSvc)
@@ -91,16 +94,16 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	RegisterCMCAggregate(instantiateSvc)
 	RegisterCertAggregate(instantiateSvc)
 	AddECInstantiate(logger, instantiateSvc)
-	initLCL(logger, instantiateSvc, ch, d)
-	initThermalSensor(logger, instantiateSvc, ch, d)
+	initLCL(logger, instantiateSvc, am3Svc, ch, d)
 	inithealth(ctx, logger, ch, d)
 	stdmeta.InitializeSsoinfo(d) //remove when ready
-	telemetryservice.RegisterAggregate(instantiateSvc)
-	telemetryservice.New(ctx, logger, ch, d)
 
 	stdmeta.SetupSledProfilePlugin(d)
 	stdmeta.InitializeCertInfo(d)
 	stdmeta.GenericDefPlugin(ch, d)
+
+	// telemetry service is up before aggs/*json are executed
+	telemetryservice.New(ctx, logger, ch, d)
 
 	godefs.InitGoDef()
 
@@ -151,7 +154,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	// The following model maps a bunch of health related stuff that can be tracked once at a global level.
 	// we can add this model to the views that need to expose it
 	globalHealthModel := model.New()
-	healthLogger := logger.New("module", "health_rollup")
+	healthLogger := log.With(logger, "module", "health_rollup")
 	am2Svc.NewMapping(ctx, healthLogger, cfgMgr, cfgMgrMu, globalHealthModel, "global_health", "global_health", map[string]interface{}{}, nil)
 
 	//*********************************************************************
@@ -167,8 +170,8 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	//*********************************************************************
 	// /redfish/v1/Sessions
 	//*********************************************************************
-	_, sessionSvcVw, _ := instantiateSvc.Instantiate("sessionservice", map[string]interface{}{})
-	session.SetupSessionService(instantiateSvc, sessionSvcVw, d)
+	svcLogger, sessionSvcVw, _ := instantiateSvc.Instantiate("sessionservice", map[string]interface{}{})
+	session.SetupSessionService(svcLogger, instantiateSvc, sessionSvcVw, d)
 	instantiateSvc.InstantiateNoRet("sessioncollection", map[string]interface{}{})
 
 	//*********************************************************************
@@ -179,7 +182,7 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	//*********************************************************************
 	// /redfish/v1/EventService
 	//*********************************************************************
-	evtSvc.StartEventService(ctx, logger, instantiateSvc, map[string]interface{}{})
+	evtSvc.StartEventService(ctx, instantiateSvc, map[string]interface{}{})
 
 	//*********************************************************************
 	// /redfish/v1/Registries
@@ -201,6 +204,9 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	// VIPER Config:
 	// pull the config from the YAML file to populate some static config options
 	self.configChangeHandler = func() {}
+
+	// send startup events
+	setup(logger, d)
 
 	return self
 }

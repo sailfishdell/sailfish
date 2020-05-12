@@ -1,0 +1,14 @@
+{
+  "Id": "FanSensor",
+  "Name": "Fan Sensor Metric Report",
+  "Description": "Fan sensor",
+  "MetricReportDefinitionEnabled": true,
+  "MetricReportDefinitionType": "Periodic",
+  "Schedule": {"RecurrenceInterval": "PT60S"},
+  "ReportUpdates": "Overwrite",
+  "SuppressRepeatedMetricValue": false,
+  "ReportActions": ["RedfishEvent", "LogToMetricReportsCollection"],
+  "Metrics": [
+    {"MetricID": "RPMReading", "OEM": {"Dell": {"Source": "fan"}}}
+  ]
+}

@@ -1,0 +1,11 @@
+{ 
+    "@odata.type": "#MetricDefinition.v1_0_2.MetricDefinition",
+    "Id": "AvailableSpareThreshold",
+    "Name": "Available Spare Threshold Metric Definition",
+    "Description": "The available spare value below which an asynchronous event completion may occur.  The value is indicated as a normalized percentage (0 to 100%)",
+    "MetricType": "Discrete",
+    "MetricDataType": "Integer",
+    "SensingInterval": "PT3600S",
+    "@odata.context": "/redfish/v1/$metadata#MetricDefinition.MetricDefinition",
+    "@odata.id": "/redfish/v1/TelemetryService/MetricDefinitions/AvailableSpareThreshold"
+} 

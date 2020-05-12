@@ -1,0 +1,13 @@
+{ 
+    "@odata.type": "#MetricDefinition.v1_0_2.MetricDefinition",
+    "Id": "TotalPSUHeatDissipation",
+    "Name": "Total PSU Heat Dissipation Metric Definition",
+    "Description": "Heat dissipated from the PSU as a result of its inefficiency",
+    "MetricType": "Numeric",
+    "MetricDataType": "Integer",
+    "Units": "BTU",
+    "Accuracy": 5.0,
+    "SensingInterval": "PT5S",
+    "@odata.context": "/redfish/v1/$metadata#MetricDefinition.MetricDefinition",
+    "@odata.id": "/redfish/v1/TelemetryService/MetricDefinitions/TotalPSUHeatDissipation"
+} 

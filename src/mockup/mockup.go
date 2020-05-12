@@ -29,15 +29,15 @@ import (
 )
 
 func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, ch eh.CommandHandler, eb eh.EventBus, d *domain.DomainObjects) {
-	logger = logger.New("module", "ec")
+	logger = log.With(logger, "module", "ec")
 
 	actionhandler.Setup(ctx, ch, eb)
 	actionSvc := ah.StartService(ctx, logger, d)
-	uploadSvc := uploadhandler.StartService(ctx, logger, d)
 	am2Svc, _ := awesome_mapper2.StartService(ctx, logger, eb, ch, d)
 	am3Svc, _ := am3.StartService(ctx, logger, "am3 base service", d)
 	instantiateSvc := testaggregate.New(logger, cfgMgr, cfgMgrMu, d, am3Svc)
-	evtSvc := eventservice.New(ctx, cfgMgr, cfgMgrMu, d, instantiateSvc, actionSvc, uploadSvc)
+	uploadSvc := uploadhandler.StartService(ctx, logger, d)
+	evtSvc := eventservice.New(ctx, logger, cfgMgr, cfgMgrMu, d, instantiateSvc, actionSvc, uploadSvc)
 	eventservice.RegisterAggregate(instantiateSvc)
 	testaggregate.RegisterWithURI(instantiateSvc)
 	testaggregate.RegisterPublishEvents(instantiateSvc, evtSvc)
@@ -45,7 +45,6 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	registries.RegisterAggregate(instantiateSvc)
 	stdmeta.RegisterFormatters(instantiateSvc, d)
 	session.RegisterAggregate(instantiateSvc)
-	telemetryservice.RegisterAggregate(instantiateSvc)
 
 	stdmeta.GenericDefPlugin(ch, d)
 	pumpSvc := dell_ec.NewPumpActionSvc(ctx, logger, d)
@@ -96,12 +95,12 @@ func New(ctx context.Context, logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *
 	//*********************************************************************
 	// /redfish/v1/Sessions
 	//*********************************************************************
-	_, sessionSvcVw, _ := instantiateSvc.Instantiate("sessionservice", map[string]interface{}{})
-	session.SetupSessionService(instantiateSvc, sessionSvcVw, d)
+	svcLogger, sessionSvcVw, _ := instantiateSvc.Instantiate("sessionservice", map[string]interface{}{})
+	session.SetupSessionService(svcLogger, instantiateSvc, sessionSvcVw, d)
 	instantiateSvc.InstantiateNoRet("sessioncollection", map[string]interface{}{"collection_uri": "/redfish/v1/SessionService/Sessions"})
 
 	//*********************************************************************
 	// /redfish/v1/EventService
 	//*********************************************************************
-	evtSvc.StartEventService(ctx, logger, instantiateSvc, map[string]interface{}{})
+	evtSvc.StartEventService(ctx, instantiateSvc, map[string]interface{}{})
 }

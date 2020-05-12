@@ -1,6 +1,7 @@
 package model
 
 import (
+	"fmt"
 	"sync"
 )
 
@@ -148,4 +149,12 @@ func (s *Model) GetPropertyOk(p string) (ret interface{}, ok bool) {
 	defer s.RUnlock()
 	ret, ok = s.properties[p]
 	return
+}
+
+// PrintProperties is used for debugging to see everything a model contains.
+func (s *Model) PrintProperties() {
+	s.RLock()
+	defer s.RUnlock()
+
+	fmt.Println("model properties:", s.properties)
 }

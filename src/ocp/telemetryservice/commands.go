@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"time"
+	//"github.com/superchalupa/sailfish/src/ocp/eventservice"
 
 	eh "github.com/looplab/eventhorizon"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
@@ -15,28 +16,16 @@ const (
 	POSTCommand = eh.CommandType("TelemetryService:POST")
 )
 
-type MetricReportDefinition struct {
-	Id                            string
-	Description                   string
-	Name                          string
-	MetricReportDefinitionType    string
-	MetricReportDefinitionEnabled bool
-	MetricReportHeartbeatInterval string
-	SuppressRepeatedMetricValue   bool
-	MetricProperties              []string
-	Wildcards                     []map[string]interface{}
-}
-
 // HTTP POST Command
 type POST struct {
 	ts   *TelemetryService
 	d    *domain.DomainObjects
 	auth *domain.RedfishAuthorizationProperty
 
-	ID      eh.UUID                `json:"id"`
-	CmdID   eh.UUID                `json:"cmdid"`
-	Headers map[string]string      `eh:"optional"`
-	MRD     MetricReportDefinition `eh:"optional"`
+	MRD     MRDData
+	ID      eh.UUID           `json:"id"`
+	CmdID   eh.UUID           `json:"cmdid"`
+	Headers map[string]string `eh:"optional"`
 }
 
 // Static type checking for commands to prevent runtime errors due to typos
@@ -59,43 +48,46 @@ func (c *POST) Handle(ctx context.Context, a *domain.RedfishResourceAggregate) e
 
 	data := &domain.HTTPCmdProcessedData{
 		CommandID:  c.CmdID,
-		Results:    map[string]interface{}{"msg": "Error creating subscription"},
+		Results:    map[string]interface{}{"msg": "Error creating metric report definition"},
 		StatusCode: 500,
 		Headers:    map[string]string{}}
 
-	bl, mruuid, mrduuid := c.ts.CreateMetricReportDefinition(ctx, c.MRD, data)
+	bl, mrduuid := c.ts.CreateMetricReportDefinition(ctx, c.MRD, data)
 	if !bl {
 		a.PublishEvent(eh.NewEvent(domain.HTTPCmdProcessed, data, time.Now()))
-		return errors.New("could not create MRD")
+		return nil
 	}
 
+	// validates MRD is created successfully
 	agg, err := c.d.AggregateStore.Load(ctx, domain.AggregateType, mrduuid)
 	if err != nil {
 		a.PublishEvent(eh.NewEvent(domain.HTTPCmdProcessed, data, time.Now()))
-		return errors.New("could not load subscription aggregate")
+		return errors.New("could not load MRD aggregate")
 	}
+
 	redfishResource, ok := agg.(*domain.RedfishResourceAggregate)
 	if !ok {
 		a.PublishEvent(eh.NewEvent(domain.HTTPCmdProcessed, data, time.Now()))
 		return errors.New("wrong aggregate type returned")
 	}
 
-	agg, err = c.d.AggregateStore.Load(ctx, domain.AggregateType, mruuid)
-	if err != nil {
-		a.PublishEvent(eh.NewEvent(domain.HTTPCmdProcessed, data, time.Now()))
-		return errors.New("could not load subscription aggregate")
+	domain.NewGet(ctx, redfishResource, &redfishResource.Properties, c.auth)
+	tmpResponse := domain.Flatten(&redfishResource.Properties, false)
+
+	r, ok := tmpResponse.(map[string]interface{})
+	if ok {
+		r2 := data.Results.(map[string]interface{})
+		for k, v := range r {
+			r2[k] = v
+		}
 	}
 
-	//redfishResource.Lock()
-	//defer redfishResource.Unlock()
-	domain.NewGet(ctx, redfishResource, &redfishResource.Properties, c.auth)
-	data.Results = domain.Flatten(&redfishResource.Properties, false)
+	data.StatusCode = a.StatusCode
 
 	for k, v := range a.Headers {
 		data.Headers[k] = v
 	}
 	data.Headers["Location"] = redfishResource.ResourceURI
-	data.StatusCode = 200
 	a.PublishEvent(eh.NewEvent(domain.HTTPCmdProcessed, data, time.Now()))
 
 	return nil

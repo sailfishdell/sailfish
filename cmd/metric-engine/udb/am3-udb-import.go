@@ -4,9 +4,11 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 	"time"
@@ -14,57 +16,41 @@ import (
 	"github.com/jmoiron/sqlx"
 	eh "github.com/looplab/eventhorizon"
 	"github.com/spf13/viper"
-	"github.com/superchalupa/sailfish/src/looplab/event"
+	"golang.org/x/xerrors"
 
-	"github.com/superchalupa/sailfish/cmd/metric-engine/telemetry-db"
+	"github.com/superchalupa/sailfish/cmd/metric-engine/telemetry"
+	"github.com/superchalupa/sailfish/src/fileutils"
+	"github.com/superchalupa/sailfish/src/looplab/event"
+	"github.com/superchalupa/sailfish/src/ocp/am3"
 
 	log "github.com/superchalupa/sailfish/src/log"
 )
 
 const (
-	UDBDatabaseEvent eh.EventType = "UDBDatabaseEvent"
-	UDBChangeEvent   eh.EventType = "UDBChangeEvent"
+	udbChangeEvent eh.EventType = "UDBChangeEvent"
 )
 
-type BusComponents interface {
+// format strings for JSON for update events
+const (
+	jsonEnableMRD           = `{"MetricReportDefinitionEnabled": true}`
+	jsonDisableMRD          = `{"MetricReportDefinitionEnabled": false}`
+	jsonReportTimespanMRD   = `{"Schedule": {"RecurrenceInterval": "PT%sS"}}`
+	triggerOdataidPrefix    = "/redfish/v1/TelemetryService/Triggers/"
+	enableTelemetry         = "EnableTelemetry"
+	reportInterval          = "ReportInterval"
+	reportTriggers          = "ReportTriggers"
+	maxPackedEvents         = 30
+	cfgdbTelemetryKeyPrefix = "iDRAC.Embedded.1#Telemetry"
+
+	// error strings
+	addHandlerFail = "Failed to attach event handler: %w"
+)
+
+type busComponents interface {
 	GetBus() eh.EventBus
 }
 
-type EventHandlingService interface {
-	AddEventHandler(string, eh.EventType, func(eh.Event))
-}
-
-func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc EventHandlingService, d BusComponents) {
-	database, err := sqlx.Open("sqlite3", ":memory:")
-	if err != nil {
-		logger.Crit("Could not open udb database", "err", err)
-		return
-	}
-
-	// attach UDB db
-	attach := "Attach '" + cfg.GetString("main.udbdatabasepath") + "' as udbdm"
-	fmt.Println(attach)
-	_, err = database.Exec(attach)
-	if err != nil {
-		logger.Crit("Could not attach UDB database", "attach", attach, "err", err)
-		return
-	}
-
-	// attach SHM db
-	attach = "Attach '" + cfg.GetString("main.shmdatabasepath") + "' as udbsm"
-	fmt.Println(attach)
-	_, err = database.Exec(attach)
-	if err != nil {
-		logger.Crit("Could not attach SM database", "attach", attach, "err", err)
-		return
-	}
-
-	// we have a separate goroutine for this, so we should be safe to busy-wait
-	_, err = database.Exec(`
-		-- ensure nothing we do will ever modify the source
-		PRAGMA query_only = 1;
-		-- should be set in connection string, but just in case:
-		PRAGMA busy_timeout = 1000;
+/*
 	  -- don't ever run sync() or friends
 		-- PRAGMA synchronous = off;
 		-- PRAGMA       journal_mode  = off;
@@ -75,145 +61,575 @@ func RegisterAM3(logger log.Logger, cfg *viper.Viper, am3Svc EventHandlingServic
 		-- PRAGMA udbdm.cache_size = 0;
 		-- PRAGMA udbsm.cache_size = 0;
 		-- PRAGMA mmap_size = 0;
-		`)
-	if err != nil {
-		panic("Could not set up initial UDB database parameters: " + err.Error())
-	}
+*/
 
-	// we have only one thread doing updates, so one connection should be
-	// fine. keeps sqlite from opening new connections un-necessarily
-	database.SetMaxOpenConns(1)
-
-	UDBFactory, err := NewUDBFactory(logger, database, d, cfg)
+func attachDB(database *sqlx.DB, dbfile string, as string) error {
+	// attach UDB db
+	attach := "" +
+		"PRAGMA cache_size = 0; " +
+		"PRAGMA mmap_size=65536; " +
+		"PRAGMA  synchronous = NORMAL;" +
+		"Attach '" + dbfile + "' as " + as + "; " +
+		"PRAGMA " + as + ".cache_size = 0; " +
+		"PRAGMA " + as + ".journal_mode = off; " +
+		"PRAGMA cache=shared; " +
+		""
+	_, err := database.Exec(attach)
 	if err != nil {
-		logger.Crit("Error creating udb integration", "err", err)
 		database.Close()
-		return
+		return xerrors.Errorf("Could not attach %s database(%s). sql(%s) err: %w", as, dbfile, attach, err)
+	}
+	return nil
+}
+
+// nolint: funlen  // will address this later in patch series
+// Startup will attach event handlers to handle import UDB import
+func Startup(logger log.Logger, cfg *viper.Viper, am3Svc am3.Service, d busComponents) (func(), error) {
+	// setup programatic defaults. can be overridden in config file
+	cfg.SetDefault("udb.udbdatabasepath",
+		"file:/run/unifieddatabase/DMLiveObjectDatabase.db?cache=shared&_foreign_keys=off&mode=ro&_busy_timeout=1000&nolock=1&cache=shared")
+	cfg.SetDefault("udb.shmdatabasepath",
+		"file:/run/unifieddatabase/SHM.db?cache=shared&_foreign_keys=off&mode=ro&_busy_timeout=1000&nolock=1&cache=shared")
+	cfg.SetDefault("udb.udbnotifypipe", "/run/telemetryservice/udbtdbipcpipe")
+
+	database, err := sqlx.Open("sqlite3", ":memory:")
+	if err != nil {
+		return nil, xerrors.Errorf("Could not create empty in-memory sqlite database: %w", err)
 	}
 
-	go handleUDBNotifyPipe(logger, cfg.GetString("main.udbnotifypipe"), d)
+	err = attachDB(database, cfg.GetString("udb.udbdatabasepath"), "udbdm")
+	if err != nil {
+		return nil, xerrors.Errorf("Error attaching UDB db file: %w", err)
+	}
 
-	// This is the event to trigger UDB imports. We will only attach it after a second to let all startup settle before we start processing imports from UDB from UDB
-	go func() {
-		time.Sleep(1 * time.Second)
+	err = attachDB(database, cfg.GetString("udb.shmdatabasepath"), "udbsm")
+	if err != nil {
+		return nil, xerrors.Errorf("Error attaching SHM db file: %w", err)
+	}
 
-		// Do a 1 time unconditional import
-		fmt.Printf("Initial Import\n")
-		UDBFactory.IterUDBTables(func(name string, meta UDBMeta) error {
-			UDBFactory.ConditionalImport(name, meta, false)
-			return nil
-		})
-		fmt.Printf("Initial Import Done\n")
+	database.SetMaxOpenConns(1) // shouldn't need to run more than one query concurrently
 
-		// set up the event handler that will do periodic imports every ~1s.
-		am3Svc.AddEventHandler("Import UDB Metric Values", telemetry.DatabaseMaintenance, func(event eh.Event) {
-			// TODO: get smarter about this. We ought to calculate time until next report and set a timer for that
-			UDBFactory.IterUDBTables(func(name string, meta UDBMeta) error {
-				UDBFactory.ConditionalImport(name, meta, true)
-				return nil
-			})
-		})
-	}()
+	importMgr, err := newImportManager(logger, database, d, cfg)
+	if err != nil {
+		database.Close()
+		return nil, xerrors.Errorf("Error creating udb integration: %w", err)
+	}
 
-	am3Svc.AddEventHandler("UDB Change Notification", UDBChangeEvent, func(event eh.Event) {
-		notify, ok := event.Data().(*ChangeNotify)
+	bus := d.GetBus()
+	err = setupLegacyARSync(logger, importMgr, database, am3Svc, d)
+	if err != nil {
+		database.Close()
+		return nil, xerrors.Errorf("Error setting up legacy ar sync: %w", err)
+	}
+
+	err = addRuntimeHandlers(logger, importMgr, am3Svc, bus)
+	if err != nil {
+		database.Close()
+		return nil, err
+	}
+
+	go handleUDBNotifyPipe(logger, cfg.GetString("udb.udbnotifypipe"), d)
+
+	return func() { database.Close() }, nil
+}
+
+func setupLegacyARSync(logger log.Logger, importMgr *importManager, database *sqlx.DB, am3Svc am3.Service, d busComponents) error {
+	// handle sync of legacy AR attributes for MRD enable/disable, etc.
+	configSync, err := newConfigSync(logger, database, d)
+	if err != nil {
+		return err
+	}
+	err = am3Svc.AddEventHandler(
+		"UDB Cfg change Notification",
+		udbChangeEvent,
+		MakeHandlerLegacyAttributeSync(log.With(logger, "module", "LegacyARSync"), importMgr, d.GetBus(), configSync))
+	if err != nil {
+		return xerrors.Errorf(addHandlerFail, err)
+	}
+
+	configSync.kickstartLegacyARConfigSync(d)
+	return nil
+}
+
+func addRuntimeHandlers(logger log.Logger, importMgr *importManager, am3Svc am3.Service, bus eh.EventBus) error {
+	err := am3Svc.AddEventHandler(
+		"Import UDB Metric Values",
+		telemetry.PublishClock,
+		MakeHandlerUDBPeriodicImport(logger, importMgr, bus))
+	if err != nil {
+		return xerrors.Errorf(addHandlerFail, err)
+	}
+
+	err = am3Svc.AddEventHandler("UDB Change Notification", udbChangeEvent, MakeHandlerUDBChangeNotify(logger, importMgr, bus))
+	if err != nil {
+		return xerrors.Errorf(addHandlerFail, err)
+	}
+
+	err = am3Svc.AddEventHandler(
+		"Update Metric Report Definition to Sync ConfigDB",
+		telemetry.UpdateMRDResponseEvent,
+		MakeHandlerUpdateMRDSyncConfigDB(logger, importMgr, bus))
+	if err != nil {
+		return xerrors.Errorf(addHandlerFail, err)
+	}
+	return nil
+}
+
+type ConfigSync struct {
+	db          *sqlx.DB
+	enumEntries map[int64]string
+	intEntries  map[int64]string
+	strEntries  map[int64]string
+	bus         eh.EventBus
+}
+
+func newConfigSync(logger log.Logger, database *sqlx.DB, d busComponents) (*ConfigSync, error) {
+	cfgS := &ConfigSync{
+		db:          database,
+		bus:         d.GetBus(),
+		enumEntries: map[int64]string{},
+		intEntries:  map[int64]string{},
+		strEntries:  map[int64]string{},
+	}
+
+	err := GetRowID(logger, database, "Enum", cfgS.enumEntries)
+	if err != nil {
+		return nil, xerrors.Errorf("Failed to query legacy UDB AR values for Enum: %w", err)
+	}
+
+	err = GetRowID(logger, database, "Str", cfgS.strEntries)
+	if err != nil {
+		return nil, xerrors.Errorf("Failed to query legacy UDB AR values for Str: %w", err)
+	}
+
+	err = GetRowID(logger, database, "Int", cfgS.intEntries)
+	if err != nil {
+		return nil, xerrors.Errorf("Failed to query legacy UDB AR values for Int: %w", err)
+	}
+
+	return cfgS, err
+}
+
+func GetRowID(logger log.Logger, database *sqlx.DB, dataType string, entries map[int64]string) error {
+	var sqlForCurrentValue string
+
+	switch dataType {
+	case "Enum":
+		// TODO: Need to move this query out into the metric-engine.yaml file and prepare it on startup
+		sqlForCurrentValue = "select RowID,CurrentValue,Key from TblEnumAttribute where Key like '%Telemetry%';"
+	case "Str":
+		// TODO: Need to move this query out into the metric-engine.yaml file and prepare it on startup
+		sqlForCurrentValue = "select RowID,CurrentValue,Key from TblStrAttribute where Key like '%Telemetry%';"
+	case "Int":
+		// TODO: Need to move this query out into the metric-engine.yaml file and prepare it on startup
+		sqlForCurrentValue = "select RowID,CurrentValue,Key from TblIntAttribute where Key like '%Telemetry%';"
+	}
+
+	rows, err := database.Queryx(sqlForCurrentValue)
+	if err != nil {
+		logger.Crit("sql query failed for", "dataType", dataType)
+	}
+
+scan:
+	for rows.Next() {
+		var RowID int64
+		var CurrentValue string
+		var key string
+		err = rows.Scan(&RowID, &CurrentValue, &key)
+		if err != nil {
+			// report errors out to caller, but safe to continue here and try the next
+			logger.Crit("error with Scan() of row from query: ", "err", err)
+			continue
+		}
+
+		keys := strings.Split(key, "#")
+		switch keys[2] {
+		// These are all attributes that we dont care about and will skip
+		case "FQDD", "DevicePollFrequency":
+			continue scan
+		case "RSyslogServer1", "RSyslogServer2":
+			continue scan
+		case "TelemetrySubscription1", "TelemetrySubscription2":
+			continue scan
+		case "RSyslogServer1Port", "RSyslogServer2Port":
+			continue scan
+
+		// these are attributes we need to sync or TODO soon need to sync
+		case "RsyslogTarget":
+			// will need to handle rsyslog eventually (TODO:...)
+			continue scan
+			//case enableTelemetry, reportInterval, reportTriggers:
+		case enableTelemetry, reportInterval, reportTriggers:
+			// WE HANDLE THESE, add to map below
+		default:
+			logger.Crit("Internal error. Unhandled legacy AR key, code needs to be updated!", "keyname", keys[2])
+			continue scan
+		}
+
+		entries[RowID] = key
+	}
+	return err
+}
+
+// cfgUtilSet is a helper to shell out to the cfgutil binary for setting AR
+func cfgUtilSet(logger log.Logger, reportName, key, value string) {
+	cmd := exec.Command("/usr/bin/cfgutil", "command=setattr", "key="+cfgdbTelemetryKeyPrefix+reportName+".1#"+key, "value="+value)
+	output, err := cmd.Output()
+	if err != nil {
+		logger.Debug("cfgutil command=setattr", "report", reportName, "key", key, "value", value, "output", string(output), "err", err, "module", "cfgutil")
+	}
+}
+
+func MakeHandlerUpdateMRDSyncConfigDB(logger log.Logger, importMgr *importManager, bus eh.EventBus) func(eh.Event) {
+	return func(event eh.Event) {
+		logger.Info("Sync update to MRD config to CfgDB")
+		reportDef, ok := event.Data().(*telemetry.UpdateMRDResponseData)
+		if !ok {
+			logger.Crit("AddMRDCommand handler got event of incorrect format at configDBSync")
+			return
+		}
+
+		if reportDef.Enabled {
+			cfgUtilSet(logger, reportDef.Name, enableTelemetry, "Enabled")
+		} else {
+			cfgUtilSet(logger, reportDef.Name, enableTelemetry, "Disabled")
+		}
+
+		cfgUtilSet(logger, reportDef.Name, reportInterval,
+			strconv.Itoa(int(time.Duration(reportDef.Period)/time.Second)))
+
+		cfgUtilSet(logger, reportDef.Name, reportTriggers,
+			strings.Join(reportDef.TriggerList, ", "))
+	}
+}
+
+func (cs ConfigSync) kickstartLegacyARConfigSync(d busComponents) {
+	events := make([]eh.EventData, 0, maxPackedEvents)
+	for _, s := range []struct {
+		table  string
+		mapref *map[int64]string
+	}{
+		{"TblEnumAttribute", &cs.enumEntries},
+		{"TblStrAttribute", &cs.strEntries},
+		{"TblIntAttribute", &cs.intEntries},
+	} {
+		for rowid := range *s.mapref {
+			notify := &changeNotify{Database: "DMLiveObjectDatabase.db", Table: s.table, Rowid: rowid, Operation: 0}
+			events = append(events, notify)
+			if len(events) > maxPackedEvents {
+				event.PublishAndWait(context.Background(), d.GetBus(), udbChangeEvent, events)
+				events = events[:0] // re-use same memory
+			}
+		}
+	}
+	if len(events) > 0 {
+		event.PublishAndWait(context.Background(), d.GetBus(), udbChangeEvent, events)
+	}
+}
+
+// trgList = "trig1,trig2,..."  as in CurrentValue for ReportTriggers
+func makeTriggerLinksPatch(trgList string) (json.RawMessage, error) {
+	lnk := struct {
+		Links struct {
+			Triggers []struct {
+				OdataID string `json:"@odata.id"`
+			}
+		}
+	}{}
+
+	trigs := strings.Split(trgList, ",")
+	for _, trg := range trigs {
+		if trg != "" {
+			oids := struct {
+				OdataID string `json:"@odata.id"`
+			}{triggerOdataidPrefix + strings.TrimSpace(trg)}
+			lnk.Links.Triggers = append(lnk.Links.Triggers, oids)
+		}
+	}
+
+	return json.Marshal(&lnk)
+}
+
+//# tblEnumAttribute
+//# iDRAC.Embedded.1#TelemetryPSUMetrics.1#EnableTelemetry   (DONE)
+//# iDRAC.Embedded.1#TelemetryFPGASensor.1#RsyslogTarget     (waiting for the MRD syntax for Rsyslog)
+
+//# tblIntAttribute
+//# iDRAC.Embedded.1#TelemetryFPGASensor.1#ReportInterval    (DONE)
+
+//# tblStrAttribute
+//# iDRAC.Embedded.1#TelemetryFPGASensor.1#ReportTriggers    (waiting for the MRD syntax for Rsyslog)
+
+func MakeHandlerLegacyAttributeSync(logger log.Logger, importMgr *importManager, bus eh.EventBus, configSync *ConfigSync) func(eh.Event) {
+	cfgpopCount := 0
+	return func(evt eh.Event) {
+		notify, ok := evt.Data().(*changeNotify)
+		if !ok {
+			logger.Crit("UDB Change Notifier message handler got an invalid data event", "event", evt, "eventdata", evt.Data())
+			return
+		}
+
+		// Step 1: Is this a DMLiveObjectDatabase change
+		if notify.Database != "DMLiveObjectDatabase.db" {
+			return
+		}
+
+		// Step 2: Is this a tblEnumAttribute change, and does rowid match something we know about
+		keyname := ""
+		sqlForKey := ""
+		ok = false
+		switch notify.Table {
+		case "TblEnumAttribute":
+			keyname, ok = configSync.enumEntries[notify.Rowid]
+			sqlForKey = "select Key from TblEnumAttribute where ROWID = ?;"
+		case "TblIntAttribute":
+			keyname, ok = configSync.intEntries[notify.Rowid]
+			sqlForKey = "select Key from TblIntAttribute where ROWID = ?;"
+		case "TblStrAttribute":
+			keyname, ok = configSync.strEntries[notify.Rowid]
+			sqlForKey = "select Key from TblStrAttribute where ROWID = ?;"
+		default:
+			return
+		}
+
+		// step 3: exit if it's not something we found above and we know our cache of AR is up to date
+		// duplicate ar entries are getting sent up.  TODO lower counter after more diagnostics
+		if !ok && cfgpopCount > 15000 {
+			return
+		}
+
+		if !ok {
+			// so, after boot while cfgpop is still populating cfgdb entries into dm
+			// and then over to UDB we might get new AR entries we didnt see in our
+			// initial scan.  We dont want to waste time on this during normal
+			// runtime as it will impact our CPU usage.
+			//
+			// strategy is to count Attribute changes and once we hit a "reasonable"
+			// number, we'll know that cfgpop is done and stop this nonsense. There are probably other ways
+			cfgpopCount++
+
+			err := configSync.db.Get(&keyname, sqlForKey, &notify.Rowid)
+			if err != nil {
+				return
+			}
+
+			keys := strings.Split(keyname, "#")
+			switch keys[2] {
+			case enableTelemetry, reportInterval, reportTriggers:
+			default:
+				return
+			}
+
+			switch notify.Table {
+			case "TblEnumAttribute":
+				configSync.enumEntries[notify.Rowid] = keyname
+			case "TblIntAttribute":
+				configSync.intEntries[notify.Rowid] = keyname
+			case "TblStrAttribute":
+				configSync.strEntries[notify.Rowid] = keyname
+			}
+		}
+
+		// Step 4: Generate a "UpdateMRDCommandEvent" event
+		//	Ok, here first thing we need to do is do a UDB query to find the current value since UDB didn't actually send us the value
+		sqlForCurrentValue := ""
+		keys := strings.Split(keyname, "#")
+		switch keys[2] {
+		case enableTelemetry:
+			sqlForCurrentValue = "select CurrentValue from TblEnumAttribute where ROWID=?"
+		case reportInterval:
+			sqlForCurrentValue = "select CurrentValue from TblIntAttribute where ROWID=?"
+
+		case reportTriggers:
+			sqlForCurrentValue = "select CurrentValue from TblStrAttribute where ROWID=?"
+
+		default:
+			// basically these should all be filtered out way up above
+			logger.Crit("TODO: update legacy ar filter, we hit an unhandled key", "key", keys[2])
+			return
+		}
+
+		var CurrentValue string
+		err := configSync.db.Get(&CurrentValue, sqlForCurrentValue, &notify.Rowid)
+		if err != nil {
+			logger.Crit("Error checking currentvalue of rowid in database ", "err", err)
+		}
+
+		eventData, err := eh.CreateEventData(telemetry.UpdateMRDCommandEvent)
+		if err != nil {
+			logger.Crit("Error trying to create update event:", "err", err)
+			return
+		}
+
+		updateEvent, ok := eventData.(*telemetry.UpdateMRDCommandData)
+		if !ok {
+			logger.Crit("Internal error trying to type assert to update event")
+			return
+		}
+
+		// awkwardly pull out the name of the MRD to enable/disable
+		updateEvent.ReportDefinitionName = keys[1][len("Telemetry") : len(keys[1])-len(".1")]
+
+		if updateEvent.ReportDefinitionName == "" {
+			logger.Crit("Skipping report definition update for malformed keyname", "keyname", keys[1])
+			return
+		}
+
+		err = fmt.Errorf("unknown type of Legacy Config AR: %v", keys)
+		switch keys[2] {
+		case enableTelemetry:
+			switch CurrentValue {
+			case "Enabled":
+				logger.Info("Enabling report:", "ReportName", updateEvent.ReportDefinitionName)
+				err = json.Unmarshal([]byte(jsonEnableMRD), &(updateEvent.Patch))
+			case "Disabled":
+				logger.Info("Disabling report:", "ReportName", updateEvent.ReportDefinitionName)
+				err = json.Unmarshal([]byte(jsonDisableMRD), &(updateEvent.Patch))
+			default:
+				logger.Crit("Got a weird value for EnableTelemetry from AR sync", "CurrentValue", CurrentValue)
+			}
+		case reportInterval:
+			logger.Info("Set Report RecurrenceInterval", "ReportName", updateEvent.ReportDefinitionName, "Seconds", CurrentValue)
+			err = json.Unmarshal([]byte(fmt.Sprintf(jsonReportTimespanMRD, CurrentValue)), &(updateEvent.Patch))
+
+		case reportTriggers:
+			updateEvent.Patch, err = makeTriggerLinksPatch(CurrentValue)
+			//fmt.Printf(" **** report (%s) trigger update patch : %s\n", updateEvent.ReportDefinitionName, string(updateEvent.Patch))
+			if err != nil {
+				logger.Crit("Legacy AR config sync, report trigger error", "err", err)
+				return
+			}
+
+		default:
+			logger.Crit("Asked to sync legacy AR attribute that I don't know about", "keyname", keys[1], "Attribute", keys[2])
+		}
+		if err != nil {
+			logger.Crit("Legacy AR config sync error", "err", err)
+			return
+		}
+		logger.Debug("CRIT: about to send", "report", updateEvent.ReportDefinitionName, "PATCH", string(updateEvent.Patch))
+		event.Publish(context.Background(), bus, telemetry.UpdateMRDCommandEvent, updateEvent)
+	}
+}
+
+func MakeHandlerUDBPeriodicImport(logger log.Logger, importMgr *importManager, bus eh.EventBus) func(eh.Event) {
+	// close over periodic... first iteration will do forced, nonperiodic import, rest will always do periodic import
+	periodic := false
+	return func(event eh.Event) {
+		err := importMgr.runPeriodicImports(periodic)
+		if err != nil {
+			logger.Crit("Error running import", "err", err)
+		}
+		periodic = true
+	}
+}
+
+func MakeHandlerUDBChangeNotify(logger log.Logger, importMgr *importManager, bus eh.EventBus) func(eh.Event) {
+	return func(event eh.Event) {
+		notify, ok := event.Data().(*changeNotify)
 		if !ok {
 			logger.Crit("UDB Change Notifier message handler got an invalid data event", "event", event, "eventdata", event.Data())
 			return
 		}
-		UDBFactory.DBChanged(strings.ToLower(notify.Database), strings.ToLower(notify.Table))
-	})
+		err := importMgr.runUDBChangeImports(strings.ToLower(notify.Database), strings.ToLower(notify.Table))
+		if err != nil {
+			logger.Crit("Error checking if database changed", "err", err, "notify", notify)
+		}
+	}
 }
 
-type ChangeNotify struct {
+type changeNotify struct {
 	Database  string
 	Table     string
 	Rowid     int64
 	Operation int64
 }
 
-func handleUDBNotifyPipe(logger log.Logger, pipePath string, d BusComponents) {
-	// Data format we get:
-	//    DB                      TBL                  ROWID     operationid
-	// ||DMLiveObjectDatabase.db|TblNic_Port_Stats_Obj|167445167|23||
+// This is the number of '|' separated fields in a correct record
+const numChangeFields = 4
 
-	err := makeFifo(pipePath, 0660)
-	if err != nil && !os.IsExist(err) {
-		logger.Warn("Error creating UDB pipe", "err", err)
+func splitUDBNotify(data []byte, atEOF bool) (advance int, token []byte, err error) {
+	if atEOF {
+		return 0, nil, io.EOF
+	}
+	start := bytes.Index(data, []byte("||"))
+	if start == -1 { // didnt find starting ||, skip over everything
+		fmt.Printf("DEBUG (shouldnt happen): NO STARTING ||: len(%v), bytes(%+v), string(%v)\n", len(data), data, string(data))
+		return len(data), data, nil
 	}
 
-	file, err := os.OpenFile(pipePath, os.O_CREATE, os.ModeNamedPipe)
-	if err != nil {
-		logger.Crit("Error opening UDB pipe", "err", err)
+	if len(data) < start+1 { // not enough data, read some more
+		return 0, nil, nil
 	}
 
-	defer file.Close()
-
-	// The reader of the named pipe gets an EOF when the last writer exits. To
-	// avoid this, we'll simply open it ourselves for writing and never close it.
-	// This will ensure the pipe stays around forever without eof.
-
-	nullWriter, err := os.OpenFile(pipePath, os.O_WRONLY, os.ModeNamedPipe)
-	if err != nil {
-		logger.Crit("Error opening UDB pipe for (placeholder) write", "err", err)
+	if start > 0 {
+		fmt.Printf("DEBUG (shouldnt happen): JUNK start(%v): %v\n", start, string(data[0:start]))
+		return start, data[0:0], nil
 	}
 
-	// this function doesn't return (on purpose), so this defer won't do much. That's ok, we'll keep it in case we change things around in the future
-	defer nullWriter.Close()
-
-	n := &ChangeNotify{}
-	split := func(data []byte, atEOF bool) (advance int, token []byte, err error) {
-		if atEOF {
-			return 0, nil, io.EOF
-		}
-		start := bytes.Index(data, []byte("||"))
-		if start == -1 {
-			// didnt find starting ||, skip over everything
-			return len(data), nil, nil
-		}
-
-		end := bytes.Index(data[start+2:], []byte("||"))
-		if end == -1 {
-			// didnt find ending ||
-			return 0, nil, nil
-		}
-
-		// adjust 'end' here to take into account that we indexed off the start+2
-		// of the data array
-		fields := bytes.Split(data[start+2:end+start+2], []byte("|"))
-		if len(fields) != 4 {
-			n.Database = ""
-			n.Table = ""
-			n.Rowid = 0
-			n.Operation = 0
-			// skip over starting || plus any intervening data, leave the trailing || as potential start of next record
-			return start + end + 2, []byte("s"), nil
-		}
-
-		n.Database = string(fields[0])
-		n.Table = string(fields[1])
-		n.Rowid, _ = strconv.ParseInt(string(fields[2]), 10, 64)
-		n.Operation, _ = strconv.ParseInt(string(fields[3]), 10, 64)
-
-		// consume the whole thing
-		return start + 2 + end + 2, []byte("t"), nil
+	end := bytes.Index(data[start+1:], []byte("||"))
+	if end == -1 { // didnt find ending ||, read some more
+		return 0, nil, nil
 	}
 
-	// give everything a chance to settle before we start processing
-	time.Sleep(1 * time.Second)
-	fmt.Printf("STARTING UDB NOTIFY PIPE HANDLER\n")
+	if end == 0 { // got a ||| or ||||, consume 1 byte at a time
+		fmt.Printf("DEBUG (shouldnt happen): GOT ||| or ||||, skip 2. len(%v), start(%v), end(%v): %v\n", len(data), start, end, data[start:end])
+		return 1, data[0:0], nil
+	}
 
-	s := bufio.NewScanner(file)
-	s.Split(split)
-	for s.Scan() {
-		if s.Text() == "t" {
-			// publish change notification
-			evt := event.NewSyncEvent(UDBChangeEvent, n, time.Now())
-			evt.Add(1)
-			d.GetBus().PublishEvent(context.Background(), evt)
-			evt.Wait()
-			// new struct for the next notify so we dont have data races while other goroutines process the struct above
-			n = &ChangeNotify{}
+	// consume everything between start and end markers
+	return start + 1 + end + 2, data[start+2 : start+1+end], nil
+}
+
+// handleUDBNotifyPipe will handle the notification events from UDB on the
+// notification pipe and turn them into event bus messages
+//
+// Data format we get:
+//    DB                      TBL                  ROWID     operationid
+// ||DMLiveObjectDatabase.db|TblNic_Port_Stats_Obj|167445167|23||
+//
+// The reader of the named pipe gets an EOF when the last writer exits. To
+// avoid this, we'll simply open it ourselves for writing and never close it.
+// This will ensure the pipe stays around forever without eof... That's what
+// nullWriter is for, below.
+func handleUDBNotifyPipe(logger log.Logger, pipePath string, d busComponents) {
+	for {
+		// clear out everything at startup and recreate files
+		if !fileutils.IsFIFO(pipePath) {
+			logger.Info("remove previous pipe path and recreate", "pipePath", pipePath)
+			_ = os.Remove(pipePath)
+			err := fileutils.MakeFifo(pipePath, 0660)
+			if err != nil && !os.IsExist(err) {
+				logger.Warn("Error creating UDB pipe", "err", err)
+			}
 		}
+
+		logger.Info("Startup telemetry service UDB pipe processing.")
+		// O_RDONLY opens with blocking behaviour, wont get past this line until somebody writes. that's ok.
+		file, err := os.OpenFile(pipePath, os.O_RDONLY, 0o660) //golang octal prefix: 0o
+		if err != nil {
+			logger.Crit("Error opening UDB pipe", "err", err)
+		}
+
+		s := bufio.NewScanner(file)
+		s.Split(splitUDBNotify)
+		for s.Scan() {
+			fields := bytes.Split(s.Bytes(), []byte("|"))
+			if len(fields) != numChangeFields {
+				fmt.Printf("DEBUG (shouldnt happen): GOT MISMATCH(%v!=%v): %v\n", len(fields), numChangeFields, s.Text())
+				continue
+			}
+
+			n := changeNotify{
+				Database: string(fields[0]),
+				Table:    string(fields[1]),
+			}
+			n.Rowid, _ = strconv.ParseInt(string(fields[2]), 10, 64)
+			n.Operation, _ = strconv.ParseInt(string(fields[3]), 10, 64)
+
+			event.PublishAndWait(context.Background(), d.GetBus(), udbChangeEvent, &n)
+		}
+
+		file.Close()
 	}
 }

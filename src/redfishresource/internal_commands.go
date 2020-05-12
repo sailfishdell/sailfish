@@ -13,11 +13,11 @@ import (
 )
 
 func init() {
-	eh.RegisterCommand(func() eh.Command { return &UpdateMetricRedfishResource{} })
 	eh.RegisterCommand(func() eh.Command { return &CreateRedfishResource{} })
 	eh.RegisterCommand(func() eh.Command { return &RemoveRedfishResource{} })
 	eh.RegisterCommand(func() eh.Command { return &UpdateRedfishResourceProperties{} })
 	eh.RegisterCommand(func() eh.Command { return &UpdateRedfishResourceProperties2{} })
+	eh.RegisterCommand(func() eh.Command { return &UpdateRedfishResourceCollection{} })
 	eh.RegisterCommand(func() eh.Command { return &RemoveRedfishResourceProperty{} })
 }
 
@@ -27,6 +27,7 @@ const (
 	UpdateMetricRedfishResourcePropertiesCommand = eh.CommandType("internal:RedfishResourceProperties:UpdateMetric")
 	UpdateRedfishResourcePropertiesCommand       = eh.CommandType("internal:RedfishResourceProperties:Update")
 	UpdateRedfishResourcePropertiesCommand2      = eh.CommandType("internal:RedfishResourceProperties:Update:2")
+	UpdateRedfishResourceCollectionCommand       = eh.CommandType("internal:RedfishResourceProperties:UpdateCollection")
 	RemoveRedfishResourcePropertyCommand         = eh.CommandType("internal:RedfishResourceProperties:Remove")
 )
 
@@ -35,6 +36,7 @@ var _ = eh.Command(&CreateRedfishResource{})
 var _ = eh.Command(&RemoveRedfishResource{})
 var _ = eh.Command(&UpdateRedfishResourceProperties{})
 var _ = eh.Command(&UpdateRedfishResourceProperties2{})
+var _ = eh.Command(&UpdateRedfishResourceCollection{})
 var _ = eh.Command(&RemoveRedfishResourceProperty{})
 
 var immutableProperties = []string{"@odata.id", "@odata.type", "@odata.context"}
@@ -193,10 +195,11 @@ func (c *RemoveRedfishResourceProperty) Handle(ctx context.Context, a *RedfishRe
 	return nil
 }
 
-// toUpdate	{path2key : value}
+// toUpdate {path2key : value}
 type UpdateRedfishResourceProperties2 struct {
-	ID         eh.UUID `json:"id"`
-	Properties map[string]interface{}
+	ID          eh.UUID `json:"id"`
+	ResourceURI string  `eh:"optional"`
+	Properties  map[string]interface{}
 }
 
 // ShoudlSave satisfies the ShouldSaver interface to tell CommandHandler to save this to DB
@@ -211,6 +214,27 @@ func (c *UpdateRedfishResourceProperties2) AggregateID() eh.UUID { return c.ID }
 // CommandType satisfies base Command interface
 func (c *UpdateRedfishResourceProperties2) CommandType() eh.CommandType {
 	return UpdateRedfishResourcePropertiesCommand2
+}
+
+type UpdateRedfishResourceCollection struct {
+	ID         eh.UUID `json:"id"`
+	Properties map[string]interface{}
+	Format     string
+	TargetMap  map[string]interface{}
+}
+
+// ShoudlSave satisfies the ShouldSaver interface to tell CommandHandler to save this to DB
+func (c *UpdateRedfishResourceCollection) ShouldSave() bool { return true }
+
+// AggregateType satisfies base Aggregate interface
+func (c *UpdateRedfishResourceCollection) AggregateType() eh.AggregateType { return AggregateType }
+
+// AggregateID satisfies base Aggregate interface
+func (c *UpdateRedfishResourceCollection) AggregateID() eh.UUID { return c.ID }
+
+// CommandType satisfies base Command interface
+func (c *UpdateRedfishResourceCollection) CommandType() eh.CommandType {
+	return UpdateRedfishResourceCollectionCommand
 }
 
 // aggregate is a.Properties.(RedfishresourceProperty)
@@ -277,6 +301,117 @@ func UpdateAgg(a *RedfishResourceAggregate, pathSlice []string, v interface{}, a
 
 }
 
+func UpdateCollection(a *RedfishResourceAggregate, pathSlice []string, v interface{}, format string, vMap map[string]interface{}) error {
+	loc, ok := a.Properties.Value.(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("UpdateCollection: property is wrong type %T", a.Properties.Value)
+	}
+
+	for _, p := range pathSlice {
+		k, ok := loc[p]
+		if !ok {
+			loc[p] = &RedfishResourceProperty{}
+			k = loc[p]
+		}
+		switch k.(type) {
+		case *RedfishResourceProperty:
+			k2, ok := k.(*RedfishResourceProperty)
+			if !ok {
+				return errors.New("UpdateCollection Failed, RedfishResourcePropertyFailed")
+			}
+			aggValue := GetValueinAgg(a, pathSlice)
+			if strings.Contains(p, "@odata.count") {
+				//TODO: if value already exists in list, do not change count
+				//"Members@odata.count" is overwritten in redfish_filter.go
+				aggInt, ok1 := aggValue.(int)
+				vInt, ok2 := v.(int)
+				if !ok1 || !ok2 {
+					return errors.New("UpdateCollection Failed, could not type assert ints")
+				}
+				k2.Value = aggInt + vInt
+				continue
+			}
+			proto := Flatten(aggValue, true)
+			aggSlice, ok1 := proto.([]interface{})
+			vStr, ok2 := v.(string)
+			if !ok || !ok2 {
+				return fmt.Errorf("Type assert failed, interface list assertion: %s, string assertion: %s", ok1, ok2)
+			}
+
+			switch format {
+			case "expand": //TODO: expand values will not be updated if the original agg is updated
+				aggSlice = append(aggSlice, vMap)
+				k2.Value = []interface{}{}
+				k2.Parse(aggSlice)
+			case "expand_prepend":
+				aggSlice = append(aggSlice, map[string]interface{}{})
+				copy(aggSlice[1:], aggSlice)
+				aggSlice[0] = vMap
+				k2.Value = []interface{}{}
+				k2.Parse(aggSlice)
+			case "formatOdataList":
+				aggSlice = append(aggSlice, map[string]interface{}{"@odata.id": vStr})
+				k2.Value = []interface{}{}
+				k2.Parse(aggSlice)
+			case "formatOdataList_prepend":
+				aggSlice = append(aggSlice, map[string]interface{}{})
+				copy(aggSlice[1:], aggSlice)
+				aggSlice[0] = map[string]interface{}{"@odata.id": vStr}
+				k2.Value = []interface{}{}
+				k2.Parse(aggSlice)
+			case "remove":
+				index, ok := locationOf(aggSlice, vStr)
+				if !ok {
+					return errors.New("slice elements not formatted properly")
+				}
+				//fmt.Println("Index of ", vStr, ": ", index)
+				if index >= 0 {
+					aggSlice = append(aggSlice[:index], aggSlice[index+1:]...)
+					k2.Value = []interface{}{}
+					k2.Parse(aggSlice)
+				}
+			default:
+				return errors.New("Unrecognized format")
+			}
+		default:
+			return fmt.Errorf("agg update for slice %+v, received type %T instead of *RedfishResourceProperty", pathSlice, k)
+		}
+	}
+	return nil
+}
+
+func locationOf(array []interface{}, target_uri interface{}) (location int, ok bool) {
+	location = -1
+	ok = true
+	if len(array) == 0 {
+		return
+	}
+	_, isString := array[0].(string)
+	for index, entry := range array {
+		if isString {
+			if entry == target_uri {
+				location = index
+				break
+			}
+		} else {
+			entry_map, ok := entry.(map[string]interface{})
+			if !ok {
+				break
+			}
+			uri, ok := entry_map["@odata.id"]
+			if !ok {
+				break
+			}
+			if uri.(string) == target_uri {
+				location = index
+				break
+			}
+		}
+	}
+
+	return
+}
+
 func GetValueinAgg(a *RedfishResourceAggregate, pathSlice []string) interface{} {
 	a.Properties.Lock()
 	defer a.Properties.Unlock()
@@ -313,7 +448,7 @@ func GetValueinAgg(a *RedfishResourceAggregate, pathSlice []string) interface{} 
 		}
 	}
 
-	return nil
+	return fmt.Errorf("path not found", "path", pathSlice)
 
 }
 
@@ -342,6 +477,37 @@ func (c *UpdateRedfishResourceProperties2) Handle(ctx context.Context, a *Redfis
 
 		err := UpdateAgg(a, pathSlice, v, 0)
 
+		if err == nil {
+			d.PropertyNames[k] = v
+		}
+	}
+
+	if len(d.PropertyNames) > 0 {
+		a.PublishEvent(eh.NewEvent(RedfishResourcePropertiesUpdated2, d, time.Now()))
+	}
+	return err
+}
+
+func (c *UpdateRedfishResourceCollection) Handle(ctx context.Context, a *RedfishResourceAggregate) error {
+	if a.ID == eh.UUID("") {
+		requestLogger := log.ContextLogger(ctx, "internal_commands")
+		requestLogger.Error("Aggregate does not exist!", "UUID", a.ID, "URI", a.ResourceURI, "COMMAND", c)
+		return errors.New("non existent aggregate")
+	}
+
+	var err error = nil
+
+	d := &RedfishResourcePropertiesUpdatedData2{
+		ID:            c.ID,
+		ResourceURI:   a.ResourceURI,
+		PropertyNames: make(map[string]interface{}),
+	}
+
+	// update properties in aggregate
+	for k, v := range c.Properties {
+		pathSlice := strings.Split(k, "/")
+
+		err := UpdateCollection(a, pathSlice, v, c.Format, c.TargetMap)
 		if err == nil {
 			d.PropertyNames[k] = v
 		}

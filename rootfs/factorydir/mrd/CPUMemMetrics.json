@@ -1,0 +1,22 @@
+{
+  "Id": "CPUMemMetrics",
+  "Name": "CPU Mem Metrics Metric Report",
+  "Description": "CPU Memory metrics",
+  "MetricReportDefinitionEnabled": true,
+  "MetricReportDefinitionType": "Periodic",
+  "ReportUpdates": "Overwrite",
+  "SuppressRepeatedMetricValue": false,
+  "ReportActions": ["RedfishEvent", "LogToMetricReportsCollection"],
+  "Schedule": {"RecurrenceInterval": "PT60S"},
+  "Metrics": [
+    {"MetricID": "CPUC0ResidencyHigh"},
+    {"MetricID": "CPUC0ResidencyLow"},
+    {"MetricID": "CUPSIIOBandwidthDMI"},
+    {"MetricID": "CUPSIIOBandwidthPort0"},
+    {"MetricID": "CUPSIIOBandwidthPort1"},
+    {"MetricID": "CUPSIIOBandwidthPort2"},
+    {"MetricID": "CUPSIIOBandwidthPort3"},
+    {"MetricID": "NonC0ResidencyHigh"},
+    {"MetricID": "NonC0ResidencyLow"}
+  ]
+}

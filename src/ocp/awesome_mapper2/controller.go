@@ -78,7 +78,7 @@ func (s *Service) NewMapping(ctx context.Context, logger log.Logger, cfg *viper.
 	functionsMu.RLock()
 	defer functionsMu.RUnlock()
 
-	logger = logger.New("module", "am2")
+	logger = log.With(logger, "module", "am2")
 
 	// TODO: this is a candidate to push down into a closure for the actual functions instead of accounting for this at the global level
 	if UUID == nil {
@@ -139,7 +139,7 @@ func (s *Service) NewMapping(ctx context.Context, logger log.Logger, cfg *viper.
 					setupSelectFn = setupSelectFuncs["govaluate_select"]
 				}
 				setupSelectFuncsMu.RUnlock()
-				selectFn, err := setupSelectFn(logger.New("cfgName", cfgName), cfgEntry)
+				selectFn, err := setupSelectFn(log.With(logger, "cfgName", cfgName), cfgEntry)
 
 				if err != nil {
 					logger.Crit("config setup failed", "err", err)
@@ -179,7 +179,7 @@ func (s *Service) NewMapping(ctx context.Context, logger log.Logger, cfg *viper.
 						continue
 					}
 
-					processFn, oneTimeFn, err := setupProcessFn(logger.New("cfgName", cfgName), fnParams)
+					processFn, oneTimeFn, err := setupProcessFn(log.With(logger, "cfgName", cfgName), fnParams)
 					if !ok {
 						logger.Warn("SetupProcessFn failed", "function name", fnName, "error", err)
 						continue
@@ -242,7 +242,7 @@ func (s *Service) NewMapping(ctx context.Context, logger log.Logger, cfg *viper.
 func StartService(ctx context.Context, logger log.Logger, eb eh.EventBus, ch eh.CommandHandler, d BusObjs) (*Service, error) {
 
 	ret := &Service{
-		logger:     logger.New("module", "am2"),
+		logger:     log.With(logger, "module", "am2"),
 		cfgSection: map[string]*ConfigSection{},
 		hash:       map[eh.EventType][]*MapperConfig{},
 	}

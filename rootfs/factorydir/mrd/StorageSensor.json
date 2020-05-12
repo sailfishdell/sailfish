@@ -1,0 +1,14 @@
+{
+  "Id": "StorageSensor",
+  "Name": "Storage Sensor Metric Report",
+  "Description": "Temperature information for the storage internal drives",
+  "MetricReportDefinitionEnabled": true,
+  "MetricReportDefinitionType": "Periodic",
+  "Schedule": {"RecurrenceInterval": "PT60S"},
+  "ReportUpdates": "Overwrite",
+  "SuppressRepeatedMetricValue": false,
+  "ReportActions": ["RedfishEvent", "LogToMetricReportsCollection"],
+  "Metrics": [
+    {"MetricID": "TemperatureReading", "OEM": {"Dell": {"Source": "storage-sensor" }}}
+  ]
+}

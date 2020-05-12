@@ -17,6 +17,7 @@ package aggregatestore
 import (
 	"context"
 	"errors"
+
 	"golang.org/x/xerrors"
 
 	eh "github.com/looplab/eventhorizon"

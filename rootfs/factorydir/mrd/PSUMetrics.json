@@ -1,0 +1,15 @@
+{
+  "Id": "PSUMetrics",
+  "Name": "PSU Metric Report",
+  "Description": "Power supply metrics",
+  "MetricReportDefinitionEnabled": true,
+  "MetricReportDefinitionType": "Periodic",
+  "Schedule": {"RecurrenceInterval": "PT60S"},
+  "ReportUpdates": "Overwrite",
+  "SuppressRepeatedMetricValue": false,
+  "ReportActions": ["RedfishEvent", "LogToMetricReportsCollection"],
+  "Metrics": [
+    {"MetricID": "RPMReading", "OEM": {"Dell": {"Source": "psu-sensor"}}},
+    {"MetricID": "TemperatureReading", "OEM": {"Dell": {"Source": "psu-sensor" }}}
+  ]
+}

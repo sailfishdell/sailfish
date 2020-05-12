@@ -1,0 +1,83 @@
+#!/bin/bash
+
+set -e
+scriptdir=$(cd $(dirname $0); pwd)
+cd $scriptdir/..
+
+METRIC_ENGINE_TAGS="pprof sse redfish pipe persistence"
+METRIC_ENGINE_PATHS="
+  ./cmd/metric-engine/...
+  ./src/ocp/am3/...
+  ./src/log/...
+  ./src/http_sse/...
+  ./src/tlscert/...
+  ./src/rawjsonstream/...
+  ./src/looplab/event/...
+  ./src/looplab/eventbus/...
+  ./src/looplab/eventwaiter/...
+  ./src/log15adapter/...
+  ./src/fifoutil/...
+  "
+
+SAILFISH_TAGS="pprof sse redfish pipe"
+SAILFISH_PATHS="
+  ./cmd/sailfish/...
+  ./src/...
+  "
+
+LINT_MODULES=${LINT_MODULES:-METRIC_ENGINE SAILFISH}
+
+lint() {
+  hash golangci-lint 2>&- || { echo "Need to lint GO files, but cannot find 'golangci-lint' in PATH." >&2; exit 1; }
+
+  for i in $LINT_MODULES
+  do
+    tags=${i}_TAGS
+    paths=${i}_PATHS
+    CMD="golangci-lint run $@"
+    if ! $CMD --build-tags "${!tags}" ${!paths}; then
+      exit 1
+    fi
+  done
+}
+
+
+moreopts=1
+while [[ $moreopts = 1 && $# -gt 0 ]]; do
+  case "$1" in
+    --about|?|help|-h|--help )
+      echo -e "\nusage: $0 [module]"
+      echo -e "  --full  full               - Run all modules"
+      echo -e "  --me    metric-engine  me  - Metric Engine"
+      echo -e "  --sf    sailfish       sf  - Sailfish"
+      echo -e "\nRuns go meta-linters on last commit and report added issues\n"
+      echo
+      exit 0
+      ;;
+    --full|full)
+      LINT_MODULES="METRIC_ENGINE SAILFISH"
+      shift
+      ;;
+    metric-engine|me|--me)
+      LINT_MODULES="METRIC_ENGINE"
+      shift
+      ;;
+    sailfish|sf|--sf)
+      LINT_MODULES="SAILFISH"
+      shift
+      ;;
+    latestonly)
+      ARGS="$ARGS --new-from-rev=HEAD~"
+      shift
+      ;;
+    15gtopic)
+      ARGS="$ARGS --new-from-rev=origin/rel/15g/master"
+      shift
+      ;;
+    *)
+      moreopts=0
+      ;;
+  esac
+done
+
+lint "$ARGS" "$@"

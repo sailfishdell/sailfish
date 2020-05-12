@@ -4,8 +4,11 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/binary"
+	"encoding/json"
 	"errors"
 	"fmt"
+
+	"golang.org/x/xerrors"
 )
 
 type DMObject struct {
@@ -14,7 +17,13 @@ type DMObject struct {
 	Extra    []byte
 }
 
-func (mp *DMObject) Decode(eventData map[string]interface{}) error {
+func (mp *DMObject) Decode(m json.RawMessage) error {
+	eventData := map[string]interface{}{}
+	err := json.Unmarshal(m, &eventData)
+	if err != nil {
+		return xerrors.Errorf("failed to unmarshal json to Decode DMObject: %w", err)
+	}
+
 	// TODO: assert string
 	data, ok := eventData["data"].(string)
 	if !ok {

@@ -1,0 +1,26 @@
+{
+    "@odata.type": "#Triggers.v1_1_1.Triggers",
+    "Id": "PDRWarnTrigger",
+    "Name":"Trigger on physical disk  warnings",
+    "Description": "Trigger when an OEM event is raised",
+    "MetricType": "Discrete",
+    "TriggerActions": [
+        "RedfishMetricReport"
+    ],
+    "EventTriggers": [
+        "iDRAC.1.6.PDR1102",
+        "iDRAC.1.6.PDR86",
+        "iDRAC.1.6.PDR1002",
+        "iDRAC.1.6.PDR16"
+    ],
+    "EventTriggers@odata.count": 4,
+    "Links": {
+    	"MetricReportDefinitions": [
+    	{
+           "@odata.id": "/redfish/v1/TelemetryService/MetricReportDefinitions/StorageDiskSMARTData"
+    	}
+    	]
+    },
+    "@odata.context": "/redfish/v1/$metadata#Triggers.Triggers",
+    "@odata.id": "/redfish/v1/TelemetryService/Triggers/PDRWarnTrigger"
+}

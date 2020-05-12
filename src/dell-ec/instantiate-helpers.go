@@ -54,7 +54,7 @@ func AddECInstantiate(l log.Logger, instantiateSvc *testaggregate.Service) {
 		if !ok {
 			return nil, errors.New("need a string fqdd for addec_system_modular(), but didnt get one")
 		}
-		instantiateSvc.InstantiateNoRet("manager_cmc_integrated", map[string]interface{}{"FQDD": FQDD})
+		instantiateSvc.Instantiate("manager_cmc_integrated", map[string]interface{}{"FQDD": FQDD})
 
 		return true, nil
 	})
@@ -64,7 +64,7 @@ func AddECInstantiate(l log.Logger, instantiateSvc *testaggregate.Service) {
 		if !ok {
 			return nil, errors.New("need a string fqdd for addec_system_modular(), but didnt get one")
 		}
-		instantiateSvc.InstantiateNoRet("system_chassis", map[string]interface{}{
+		instantiateSvc.Instantiate("system_chassis", map[string]interface{}{
 			"FQDD":                   FQDD,
 			"msmConfigBackup":        view.Action(msmConfigBackup),
 			"chassisMSMConfigBackup": view.Action(chassisMSMConfigBackup),
@@ -78,7 +78,7 @@ func AddECInstantiate(l log.Logger, instantiateSvc *testaggregate.Service) {
 		if !ok {
 			return nil, errors.New("need a string fqdd for addec_system_modular(), but didnt get one")
 		}
-		instantiateSvc.InstantiateNoRet("chassis_cmc_integrated", map[string]interface{}{"FQDD": FQDD})
+		instantiateSvc.Instantiate("chassis_cmc_integrated", map[string]interface{}{"FQDD": FQDD})
 
 		return true, nil
 	})
@@ -88,7 +88,7 @@ func AddECInstantiate(l log.Logger, instantiateSvc *testaggregate.Service) {
 		if !ok {
 			return nil, errors.New("need a string fqdd for addec_system_modular(), but didnt get one")
 		}
-		instantiateSvc.InstantiateNoRet("sled", map[string]interface{}{"FQDD": FQDD})
+		instantiateSvc.Instantiate("sled", map[string]interface{}{"FQDD": FQDD})
 
 		return true, nil
 	})
@@ -98,7 +98,7 @@ func AddECInstantiate(l log.Logger, instantiateSvc *testaggregate.Service) {
 		if !ok {
 			return nil, errors.New("need a string fqdd for addiom(), but didnt get one")
 		}
-		instantiateSvc.InstantiateNoRet("iom", map[string]interface{}{"FQDD": FQDD})
+		instantiateSvc.Instantiate("iom", map[string]interface{}{"FQDD": FQDD})
 
 		return true, nil
 	})
@@ -113,7 +113,7 @@ func AddECInstantiate(l log.Logger, instantiateSvc *testaggregate.Service) {
 			return nil, errors.New("need a string fqdd for addecfan(), but didnt get one")
 		}
 
-		instantiateSvc.InstantiateNoRet("fan",
+		instantiateSvc.Instantiate("fan",
 			map[string]interface{}{
 				"ChassisFQDD": ParentFQDD,
 				"FQDD":        FQDD,
@@ -133,7 +133,7 @@ func AddECInstantiate(l log.Logger, instantiateSvc *testaggregate.Service) {
 			return nil, errors.New("need a string fqdd for addecpsu(), but didnt get one")
 		}
 
-		instantiateSvc.InstantiateNoRet("psu_slot",
+		instantiateSvc.Instantiate("psu_slot",
 			map[string]interface{}{
 				"DM_FQDD":     "System.Chassis.1#" + strings.Replace(FQDD, "PSU.Slot", "PowerSupply", 1),
 				"ChassisFQDD": ParentFQDD,
@@ -142,7 +142,7 @@ func AddECInstantiate(l log.Logger, instantiateSvc *testaggregate.Service) {
 			},
 		)
 
-		instantiateSvc.InstantiateNoRet("psu_slot",
+		instantiateSvc.Instantiate("psu_slot",
 			map[string]interface{}{
 				"DM_FQDD":     "System.Chassis.1#" + strings.Replace(FQDD, "PSU.Slot", "PowerSupply", 1),
 				"ChassisFQDD": ParentFQDD,
@@ -170,7 +170,7 @@ func AddECInstantiate(l log.Logger, instantiateSvc *testaggregate.Service) {
 		}
 		group, index := s[0], s[1]
 
-		instantiateSvc.InstantiateNoRet("slot",
+		instantiateSvc.Instantiate("slot",
 			map[string]interface{}{
 				"ParentFQDD": ParentFQDD,
 				"FQDD":       FQDD,
@@ -198,7 +198,7 @@ func AddECInstantiate(l log.Logger, instantiateSvc *testaggregate.Service) {
 		}
 		group, index := s[0], s[1]
 
-		instantiateSvc.InstantiateNoRet("slotconfig",
+		instantiateSvc.Instantiate("slotconfig",
 			map[string]interface{}{
 				"ParentFQDD": ParentFQDD,
 				"FQDD":       FQDD,
@@ -220,7 +220,7 @@ func AddECInstantiate(l log.Logger, instantiateSvc *testaggregate.Service) {
 			return nil, errors.New("need a string fqdd for addcertificate(), but didnt get one")
 		}
 
-		instantiateSvc.InstantiateNoRet("certificate",
+		instantiateSvc.Instantiate("certificate",
 			map[string]interface{}{
 				"ParentFQDD": ParentFQDD,
 				"FQDD":       FQDD,

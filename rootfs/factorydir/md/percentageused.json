@@ -1,0 +1,12 @@
+{ 
+    "@odata.type": "#MetricDefinition.v1_0_2.MetricDefinition",
+    "Id": "PercentageUsed",
+    "Name": "Percentage Used Metric Definition",
+    "Description": "Specifies a vendor specific estimate of the percentage of NVM(Non Volatile Memory) subsystem life used based on the actual usage and the manufacturer prediction of NVM life",
+    "MetricType": "Discrete",
+    "MetricDataType": "Decimal",
+    "Units": "%",
+    "SensingInterval": "PT3600S",
+    "@odata.context": "/redfish/v1/$metadata#MetricDefinition.MetricDefinition",
+    "@odata.id": "/redfish/v1/TelemetryService/MetricDefinitions/PercentageUsed"
+} 

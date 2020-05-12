@@ -25,11 +25,20 @@ import (
 	"github.com/looplab/eventhorizon/mocks"
 )
 
+const (
+	defaultTestTimeout = 10 * time.Millisecond
+
+	defaultTestYear  = 2009
+	defaultTestMonth = time.November
+	defaultTestDay   = 10
+	defaultTestHour  = 23
+)
+
 func TestEventWaiter(t *testing.T) {
 	w := NewEventWaiter(SetName("TEST"))
 
 	// Event should match when waiting.
-	timestamp := time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC)
+	timestamp := time.Date(defaultTestYear, defaultTestMonth, defaultTestDay, defaultTestHour, 0, 0, 0, time.UTC)
 	expectedEvent := eh.NewEventForAggregate(
 		mocks.EventType, nil, timestamp, mocks.AggregateType, eh.NewUUID(), 1,
 	)
@@ -64,7 +73,7 @@ func TestEventWaiter(t *testing.T) {
 		w.Notify(context.Background(), otherEvent)
 	}()
 
-	ctx, cancel = context.WithTimeout(context.Background(), 10*time.Millisecond)
+	ctx, cancel = context.WithTimeout(context.Background(), defaultTestTimeout)
 	defer cancel()
 	event, err = l.Wait(ctx)
 	if err == nil || err.Error() != "context deadline exceeded" {

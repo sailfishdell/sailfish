@@ -1,0 +1,12 @@
+{ 
+    "@odata.type": "#MetricDefinition.v1_0_2.MetricDefinition",
+    "Id": "WattsReading",
+    "Name": "Sensor Reading Metric Definition",
+    "Description": "The reading of the Sensor",
+    "MetricType": "Numeric",
+    "MetricDataType": "Decimal",
+    "Units": "W",
+    "SensingInterval": "PT5S",
+    "@odata.context": "/redfish/v1/$metadata#MetricDefinition.MetricDefinition",
+    "@odata.id": "/redfish/v1/TelemetryService/MetricDefinitions/WattsReading"
+} 

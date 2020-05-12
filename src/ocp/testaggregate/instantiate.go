@@ -17,6 +17,7 @@ import (
 
 	"github.com/superchalupa/sailfish/src/log"
 	"github.com/superchalupa/sailfish/src/looplab/eventwaiter"
+	"github.com/superchalupa/sailfish/src/ocp/am3"
 	"github.com/superchalupa/sailfish/src/ocp/model"
 	"github.com/superchalupa/sailfish/src/ocp/view"
 	domain "github.com/superchalupa/sailfish/src/redfishresource"
@@ -46,10 +47,6 @@ type Service struct {
 	serviceGlobalsMu            sync.RWMutex
 }
 
-type am3Service interface {
-	AddEventHandler(name string, et eh.EventType, fn func(eh.Event))
-}
-
 const instantiate = eh.EventType("instantiate")
 const instantiateResponse = eh.EventType("instantiate-response")
 
@@ -66,7 +63,7 @@ type InstantiateResponseData struct {
 	Err   error
 }
 
-func New(logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, d *domain.DomainObjects, am3Svc am3Service) *Service {
+func New(logger log.Logger, cfgMgr *viper.Viper, cfgMgrMu *sync.RWMutex, d *domain.DomainObjects, am3Svc am3.Service) *Service {
 	ret := &Service{
 		logger:                      logger,
 		d:                           d,
@@ -463,7 +460,7 @@ func (s *Service) internalInstantiate(name string, parameters map[string]interfa
 	s.RLock()
 	subLogger := s.logger
 	if len(config.Logger) > 0 {
-		subLogger = s.logger.New(config.Logger...)
+		subLogger = log.With(s.logger, config.Logger...)
 	}
 	s.RUnlock()
 	subLogger.Debug("Instantiated new logger")
@@ -571,30 +568,45 @@ func (s *Service) internalInstantiate(name string, parameters map[string]interfa
 	}))
 
 	// Instantiate aggregate
-	func() {
+	cmdErr := func() error {
 		if len(config.Aggregate) == 0 {
 			subLogger.Debug("no aggregate specified in config file to instantiate.")
-			return
+			return nil
 		}
 		fn := s.GetAggregateFunction(config.Aggregate)
 		if fn == nil {
 			subLogger.Crit("invalid aggregate function", "aggregate", config.Aggregate)
-			return
+			return nil
 		}
 		cmds, err := fn(ctx, subLogger, cfgMgr, cfgMgrMu, vw, nil, newParams)
 		if err != nil {
 			subLogger.Crit("aggregate function returned nil")
-			return
+			return nil
 		}
 		// We can get one or more commands back, handle them
+		first := true
 		for _, cmd := range cmds {
 			// if it's a resource create command, use the view ID for that
 			if c, ok := cmd.(*domain.CreateRedfishResource); ok {
-				c.ID = vw.GetUUID()
+				if first {
+					c.ID = vw.GetUUID()
+					first = false
+				} else {
+					c.ID = eh.NewUUID()
+				}
+
 			}
-			s.ch.HandleCommand(context.Background(), cmd)
+			err := s.ch.HandleCommand(context.Background(), cmd)
+			if err != nil {
+				subLogger.Crit("Failure trying to Handle Command", "err", err, "cmd", cmd)
+				return err
+			}
 		}
+		return nil
 	}()
+	if cmdErr != nil {
+		return nil, nil, cmdErr
+	}
 
 	// Run any POST commands
 	for _, execStr := range config.ExecPost {

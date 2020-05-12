@@ -32,9 +32,9 @@ func RegisterCertAggregate(s *testaggregate.Service) {
 						"Actions": map[string]interface{}{
 							"#DellCertificateService.GenerateCSR": map[string]interface{}{
 								"target": vw.GetActionURI("certificates.generatecsr"),
-                "Type@Redfish.AllowableValues": []string{
-                 "FactoryIdentity",
-                },
+								"Type@Redfish.AllowableValues": []string{
+									"FactoryIdentity",
+								},
 							},
 						},
 						"CertificateInventory": map[string]interface{}{
@@ -57,10 +57,10 @@ func RegisterCertAggregate(s *testaggregate.Service) {
 						"POST": []string{"ConfigureManager"},
 					},
 					Properties: map[string]interface{}{
-						"Name":                     "Certificate Inventory Collection",
-						"Description":              "Collection of Certificate Inventory",
-						"Members@meta":             vw.Meta(view.GETProperty("members"), view.GETFormatter("formatOdataList"), view.GETModel("default")),
-						"Members@odata.count@meta": vw.Meta(view.GETProperty("members"), view.GETFormatter("count"), view.GETModel("default")),
+						"Name":                "Certificate Inventory Collection",
+						"Description":         "Collection of Certificate Inventory",
+						"Members":             []interface{}{},
+						"Members@odata.count": 0,
 					},
 				}}, nil
 		})
@@ -79,6 +79,7 @@ func RegisterCertAggregate(s *testaggregate.Service) {
 						"POST": []string{"ConfigureManager"},
 					},
 					Properties: map[string]interface{}{
+
 						"Certificate@meta":   map[string]interface{}{"GET": map[string]interface{}{"plugin": "certinfo"}},
 						"Description":        "Certificate Inventory Instance",
 						"DownloadFileFormat": "PEM",
@@ -88,8 +89,8 @@ func RegisterCertAggregate(s *testaggregate.Service) {
 						"Actions": map[string]interface{}{
 							"#DellCertificateService.GetCertInfo": map[string]interface{}{
 								"target": vw.GetActionURI("certificates.getcert"),
-              },
-            },
+							},
+						},
 					},
 				}}, nil
 		})

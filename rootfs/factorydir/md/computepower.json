@@ -1,0 +1,13 @@
+{ 
+    "@odata.type": "#MetricDefinition.v1_0_2.MetricDefinition",
+    "Id": "ComputePower",
+    "Name": "Compute Power Metric Definition",
+    "Description": "Computer power that is not wasted",
+    "MetricType": "Numeric",
+    "MetricDataType": "Integer",
+    "Units": "W",
+    "Accuracy": 5.0,
+    "SensingInterval": "PT5S",
+    "@odata.context": "/redfish/v1/$metadata#MetricDefinition.MetricDefinition",
+    "@odata.id": "/redfish/v1/TelemetryService/MetricDefinitions/ComputePower"
+} 

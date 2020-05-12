@@ -1,0 +1,14 @@
+{
+  "Id": "NICSensor",
+  "Name": "Network Card Sensor Metric Report",
+  "Description": "Network Card temperature sensor",
+  "MetricReportDefinitionEnabled": true,
+  "MetricReportDefinitionType": "Periodic",
+  "Schedule": {"RecurrenceInterval": "PT60S"},
+  "ReportUpdates": "Overwrite",
+  "SuppressRepeatedMetricValue": false,
+  "ReportActions": ["RedfishEvent", "LogToMetricReportsCollection"],
+  "Metrics": [
+    {"MetricID": "TemperatureReading", "OEM": {"Dell": {"FQDD": "NIC.%"}}}
+  ]
+}

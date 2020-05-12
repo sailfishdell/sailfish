@@ -1,425 +1,15 @@
-main:
-    databasepath: file:/run/telemetryservice/telemetry_timeseries_database.db?_foreign_keys=on&cache=shared&mode=rwc&_busy_timeout=1000
-    udbdatabasepath: file:/run/unifieddatabase/DMLiveObjectDatabase.db?cache=shared&_foreign_keys=off&mode=ro&_busy_timeout=1000
-    shmdatabasepath: file:/run/unifieddatabase/SHM.db?cache=shared&_foreign_keys=off&mode=ro&_busy_timeout=1000
-    udbnotifypipe: /run/telemetryservice/udbtdbipcpipe
-    startup: ["startup-events"]
+# main:  # we now have default values for everything here in the code. Can override on an as-needed basis
+# udb: # moved udb-related paths under this top-level key. everything is in programtic defaults in code and can be overridden here
 
-sql_lists:
-    # list of prepared internal.sqlx statements to run to clean up old metric values
-    deleteops:
-      # first delete any old reports
-      # ensure that each report has at most 3 copies
-      - "delete_old_mr"
-      # then, delete the oldest metrics that are not in any reports
-      - "delete_old_mvi"
-      - "delete_old_mvr"
-      - "delete_old_mvt"
-      # then find metric #100,000 (sorted by age), and delete everything older than that
-      - "delete_mvi"
-      - "delete_mvr"
-      - "delete_mvt"
-      - "shrink"
-    orphanops: ["delete_orphan_metricinstance", "delete_orphan_metricmeta"]
-    optimizeops: ["optimize", "shrink"]
-    # can't vacuum inside a transaction, so dont bother putting vacuum in any of the above statements
-    vacuumops: ["vacuum", "shrink"]
+pprof: [ "unix:/run/telemetryservice/http.socket" ]
+SSE: [ "unix:/run/telemetryservice/http.socket" ]
+Redfish: [ "unix:/run/telemetryservice/http.socket" ]
+pipe: [ "/run/telemetryservice/metric-engine.pipe" ]
 
-# metric engine has no HTTP/HTTPS or PPROF listeners by default. Copy from the local-metric-engine.yaml if this is needed in production
-listen: [
-  #  enable pprof only for debuging, it causes increased memory consumption. If memprofilerate>0, it will use way more. It's set to 0 in the service file.
-  #"pprof::9081"
-  ]
+persistence:
+  topsavedir: "/var/lib/telemetryservice/"
+  topimportonlydir: "/usr/share/telemetryservice/"
 
-##############################################
-##
-## MEB Questions: why do we have separate CurrentCUPS from the CIMVIEW_DCIM_NumericSensor table?
-##
-## TODO: CIMVIEW_DCIM_NumericSensorPS table -> make sure we are importing the metrics we need from here
-##
-##############################################
-
-Startup-Events:
-  ###########################################################################3
-  ## Legacy reports
-  ###########################################################################3
-  - name: AddMetricReportDefinition
-    # TODO: Device Poll Frequency: 60
-    # "TelemetryAggregationMetrics.1.ReportInterval": 0,
-    # AUDIT:
-    #   [!] HAS DATA
-    #       --> RESOURCE NOT FOUND
-    #   [ ] Correct Metric IDs
-    #   [ ] Correct # of data points
-    #   [ ] Data correct
-    data: |
-      {
-        "Name": "AggregationMetrics",   "Enabled": true, "Type": "OnRequest", "Updates": "AppendWrapsWhenFull", "SuppressDups": false,
-        "Actions": [],
-        "Metrics": [ { "SourcePattern": "aggregation-metrics" } ]
-      }
-
-  - name: AddMetricReportDefinition
-    # TODO: Device Poll Frequency: 5
-    # "TelemetryCPUMemMetrics.1.ReportInterval": 60,
-    # AUDIT:
-    #   [x] HAS DATA
-    #   [ ] Correct Metric IDs
-    #   [ ] Correct # of data points
-    #   [ ] Data correct
-    data: |
-      {
-        "Name": "CPUMemMetrics",        "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false,
-        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [ { "SourcePattern": "cpumem" } ]
-      }
-
-  - name: AddMetricReportDefinition
-    # "TelemetryCPURegisters.1.ReportInterval": 0,
-    data: |
-      { "Name": "CPURegisters",         "Enabled": true, "Type": "OnChange", "Updates": "AppendWrapsWhenFull", "SuppressDups": true,
-        "Actions": [],
-        "Metrics": []
-      }
-
-  - name: AddMetricReportDefinition
-    # TODO: Device Poll Frequency: 5
-    # "TelemetryCPUSensor.1.ReportInterval": 60,
-    # AUDIT:
-    #   [.] HAS DATA
-    #       --> Empty report
-    #   [ ] Correct Metric IDs
-    #   [ ] Correct # of data points
-    #   [ ] Data correct
-    data: |
-      {
-        "Name": "CPUSensor",            "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false,
-        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [
-          {"MetricID": "TemperatureReading", "FQDDPattern": "iDRAC.Embedded.1#CPU%Temp"},
-          {"MetricID": "TemperatureReading", "FQDDPattern": "CPU.Socket.%"}
-        ]
-      }
-
-  - name: AddMetricReportDefinition
-    # TODO: Device Poll Frequency: 5
-    # "TelemetryCUPS.1.ReportInterval": 60,
-    # AUDIT:
-    #   [.] HAS DATA
-    #       --> Empty report
-    #       --> Sailaja's idrac seems that the underlying cups table isn't being populated.
-    #   [ ] Correct Metric IDs
-    #   [ ] Correct # of data points
-    #   [ ] Data correct
-    data: |
-      {
-        "Name": "CUPS", "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false,
-        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [ { "SourcePattern": "currentcups" } ]
-      }
-
-  - name: AddMetricReportDefinition
-    # TODO: Device Poll Frequency: 5
-    # "TelemetryFanSensor.1.ReportInterval": 60,
-    # AUDIT:
-    #   [x] HAS DATA
-    #   [ ] Correct Metric IDs
-    #   [ ] Correct # of data points
-    #   [ ] Data correct
-    data: |
-      {
-        "Name": "FanSensor",            "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false,
-        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [ { "SourcePattern": "fan" } ]
-      }
-
-  - name: AddMetricReportDefinition
-    # TODO: Need to limit this to FC via FQDD
-    # TODO: Device Poll Frequency: 5
-    # "TelemetryFCSensor.1.ReportInterval": 60,
-    # AUDIT:
-    #   [.] HAS DATA
-    #       --> No FC in Sailaja's machine
-    #       --> The metrics listed below *PROBABLY* have the wrong FQDDPattern anyways.
-    #   [ ] Correct Metric IDs
-    #   [ ] Correct # of data points
-    #   [ ] Data correct
-    #
-    # TODO: NOT SURE IF THE FQDDPATTERN IS RIGHT, DONT HAVE AN EXAMPLE
-    data: |
-      {
-        "Name": "FCSensor",             "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false,
-        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [{"MetricID": "TemperatureReading", "FQDDPattern": "FC.%"}]
-      }
-
-  - name: AddMetricReportDefinition
-    # TODO: Need to limit this to FPGA via FQDD
-    # TODO: Device Poll Frequency: 5
-    # "TelemetryFPGASensor.1.ReportInterval": 60,
-    # AUDIT:
-    #   [.] HAS DATA
-    #       --> No FPGA in Sailaja's machine
-    #   [ ] Correct Metric IDs
-    #   [ ] Correct # of data points
-    #   [ ] Data correct
-    data: |
-      {
-        "Name": "FPGASensor",           "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false,
-        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [ { "SourcePattern": "fpga-sensor" } ]
-      }
-
-  - name: AddMetricReportDefinition
-    # TODO: Device Poll Frequency: 5
-    # "TelemetryGPUMetrics.1.ReportInterval": 60,
-    # AUDIT:
-    #   [.] HAS DATA
-    #       --> No GPU in Sailaja's machine
-    #   [ ] Correct Metric IDs
-    #   [ ] Correct # of data points
-    #   [ ] Data correct
-    data: |
-      {
-        "Name": "GPUMetrics",           "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false,
-        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [ { "SourcePattern": "gpu-health" } ]
-      }
-
-  - name: AddMetricReportDefinition
-    # TODO: Device Poll Frequency: 600
-    # "TelemetryGPUStatistics.1.ReportInterval": 600,
-    # AUDIT:
-    #   [.] HAS DATA
-    #       --> No GPU in Sailaja's machine
-    #   [ ] Correct Metric IDs
-    #   [ ] Correct # of data points
-    #   [ ] Data correct
-    data: |
-      {
-        "Name": "GPUStatistics",        "Enabled": true, "Type": "Periodic", "Period": 600, "Updates": "Overwrite", "SuppressDups": false,
-        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [ { "SourcePattern": "gpu-statistics" } ]
-      }
-
-  - name: AddMetricReportDefinition
-    # TODO: Device Poll Frequency: 5
-    # "TelemetryMemorySensor.1.ReportInterval": 60,
-    # AUDIT:
-    #   [.] HAS DATA
-    #       --> empty report, should have data
-    #       --> not getting udb events for memory sensor table updates?
-    #   [ ] Correct Metric IDs
-    #   [ ] Correct # of data points
-    #   [ ] Data correct
-    data: |
-      {
-        "Name": "MemorySensor",         "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false,
-        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [
-          {"MetricID": "TemperatureReading", "FQDDPattern": "DIMM.Socket.%"},
-          { "SourcePattern": "memory-sensor" }
-        ]
-      }
-
-  - name: AddMetricReportDefinition
-    # TODO: Device Poll Frequency: 5
-    # "TelemetryNICSensor.1.ReportInterval": 60,
-    # AUDIT:
-    #   [x] HAS DATA
-    #   [ ] Correct Metric IDs
-    #   [ ] Correct # of data points
-    #   [ ] Data correct
-    #
-    # Gets data from hiitempsensors query
-    data: |
-      {
-        "Name": "NICSensor",            "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false,
-        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [{"MetricID": "TemperatureReading", "FQDDPattern": "NIC.%"}]
-      }
-
-  - name: AddMetricReportDefinition
-    # TODO: Device Poll Frequency: 60
-    # "TelemetryNICStatistics.1.ReportInterval": 60,
-    # AUDIT:
-    #   [x] HAS DATA
-    #   [ ] Correct Metric IDs
-    #   [ ] Correct # of data points
-    #   [ ] Data correct
-    data: |
-      {
-        "Name": "NICStatistics",        "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false,
-        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [ { "SourcePattern": "nicportstats" } ]
-      }
-
-  - name: AddMetricReportDefinition
-    # TODO: Device Poll Frequency: 3600
-    # "TelemetryNVMeSMARTData.1.ReportInterval": 3600,
-    # AUDIT:
-    #   [.] HAS DATA
-    #       --> sailaja's machine has no NVME
-    #   [ ] Correct Metric IDs
-    #   [ ] Correct # of data points
-    #   [ ] Data correct
-    data: |
-      {
-        "Name": "NVMeSMARTData",        "Enabled": true, "Type": "Periodic", "Period": 3600, "Updates": "Overwrite", "SuppressDups": false,
-        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [ { "SourcePattern": "smart-nvme" } ]
-      }
-
-  - name: AddMetricReportDefinition
-    # TODO: Device Poll Frequency: 5
-    # "TelemetryPowerMetrics.1.ReportInterval": 60,
-    # AUDIT:
-    #   [x] HAS DATA
-    #   [ ] Correct Metric IDs
-    #   [ ] Correct # of data points
-    #   [ ] Data correct
-    data: |
-      {
-        "Name": "PowerMetrics",         "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false,
-        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [ { "SourcePattern": "powermetrics" } ]
-      }
-
-  - name: AddMetricReportDefinition
-    # TODO: Device Poll Frequency: 60
-    # "TelemetryPowerStatistics.1.ReportInterval": 60,
-    # AUDIT:
-    #   [x] HAS DATA
-    #   [ ] Correct Metric IDs
-    #   [ ] Correct # of data points
-    #   [ ] Data correct
-    data: |
-      {
-        "Name": "PowerStatistics",      "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false,
-        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [ { "SourcePattern": "powerstatistics" } ]
-      }
-
-  - name: AddMetricReportDefinition
-    # TODO: Device Poll Frequency: 60
-    # "TelemetryPSUMetrics.1.ReportInterval": 60,
-    # AUDIT:
-    #   [x] HAS DATA
-    #   [ ] Correct Metric IDs
-    #   [ ] Correct # of data points
-    #   [ ] Data correct
-    data: |
-      {
-        "Name": "PSUMetrics",           "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false,
-        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [ { "SourcePattern": "psu-sensor" } ]
-      }
-
-  - name: AddMetricReportDefinition
-    # TODO: Device Poll Frequency: 5
-    # "TelemetrySensor.1.ReportInterval": 60,
-    # AUDIT:
-    #   [x] HAS DATA
-    #       --> looks like it's missing some data, or that the data isn't updated often enough from the source
-    #   [ ] Correct Metric IDs
-    #   [ ] Correct # of data points
-    #   [ ] Data correct
-    data: |
-      {
-        "Name": "Sensor",               "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false,
-        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [ { "SourcePattern": "rawsensor" } ]
-      }
-
-  - name: AddMetricReportDefinition
-    #"TelemetryStorageDiskSMARTData.1.ReportInterval": 3600,
-    # TODO: Device Poll Frequency: 3600
-    # AUDIT:
-    #   [.] HAS DATA
-    #       --> no sas drives on sailaja's machine? (this seems unlikely)
-    #   [ ] Correct Metric IDs
-    #   [ ] Correct # of data points
-    #   [ ] Data correct
-    data: |
-      {
-        "Name": "StorageDiskSMARTData", "Enabled": true, "Type": "Periodic", "Period": 3600, "Updates": "Overwrite", "SuppressDups": false,
-        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [ { "SourcePattern": "smart-sas" } ]
-      }
-
-  - name: AddMetricReportDefinition
-    # TODO: Device Poll Frequency: 5
-    # "TelemetryStorageSensor.1.ReportInterval": 60,
-    # AUDIT:
-    #   [!] HAS DATA
-    #       --> Has data initially, but source only sends changes, so the data goes stale
-    #       --> TODO: need the "expand" feature to replay dups
-    #       --> empty report. Missing HW?
-    #   [ ] Correct Metric IDs
-    #   [ ] Correct # of data points
-    #   [ ] Data correct
-    data: |
-      {
-        "Name": "StorageSensor",        "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false,
-        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [ { "SourcePattern": "storage-sensor" } ]
-      }
-
-  - name: AddMetricReportDefinition
-    # TODO: Device Poll Frequency: 5
-    # "TelemetryThermalMetrics.1.ReportInterval": 5,
-    # AUDIT:
-    #   [x] HAS DATA
-    #   [ ] Correct Metric IDs
-    #   [ ] Correct # of data points
-    #   [ ] Data correct
-    data: |
-      {
-        "Name": "ThermalMetrics",       "Enabled": true, "Type": "Periodic", "Period": 5, "Updates": "Overwrite", "SuppressDups": false,
-        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [ { "SourcePattern": "thermalmetrics" } ] }
-
-  - name: AddMetricReportDefinition
-    # TODO: Device Poll Frequency: 5
-    # "TelemetryThermalSensor.1.ReportInterval": 60,
-    # AUDIT:
-    #   [.] HAS DATA
-    #       --> this one really should have data, but it's empty
-    #   [ ] Correct Metric IDs
-    #   [ ] Correct # of data points
-    #   [ ] Data correct
-    data: |
-      {
-        "Name": "ThermalSensor",        "Enabled": true, "Type": "Periodic", "Period": 60, "Updates": "Overwrite", "SuppressDups": false,
-        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [
-          { "MetricId": "TemperatureReading", "FQDDPattern": "iDRAC.Embedded.1#SystemBoardInletTemp" },
-          { "MetricId": "TemperatureReading", "FQDDPattern": "iDRAC.Embedded.1#SystemBoardExhaustTemp" }
-        ]
-      }
-
-
-  ###########################################################################3
-  ## NEW reports
-  ###########################################################################3
-  - name: AddMetricReportDefinition
-    data: |
-      {
-        "Name": "Thermal",
-        "Enabled": true,
-        "Type": "Periodic",
-        "Period": 60,
-        "Updates": "NewReport",
-        "SuppressDups": true,
-        "Actions": ["RedfishEvent", "LogToMetricReportsCollection"],
-        "Metrics": [
-          {"MetricID": "TemperatureReading"},
-          {"MetricID": "RPMReading"}
-         ]
-       }
-
-  - name: DatabaseMaintenance
-    data: "resync to db"
 
 UDB-Metric-Import:
   CurrentCUPS:
@@ -488,7 +78,8 @@ UDB-Metric-Import:
       SHM.db:
         TblsPowerStatistics:
     ScanInterval: 0
-    WaitInterval: 10
+    # telemetrypop populates this table once per minute, dont scan more frequently than that.
+    WaitInterval: 60
     # There is a TblAvgPowerConsumptionStatDataObj, why aren't we using that?
     Query: |
       SELECT
@@ -498,26 +89,35 @@ UDB-Metric-Import:
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
 
-        LastWeekMinPowerTime as 'Metric-LastWeekMinPowerTime',
+        -- MEB - 2020-03-10 - From Sailaja - backend reports every minute
+        60000000000 as 'SensorInterval',
+        5000000000 as 'SensorSlack',
+        true as 'RequiresExpand',
+
+        strftime('%s', LastWeekMinPowerTime, 'unixepoch', 'utc') as 'Metric-LastWeekMinPowerTime',
         LastWeekMinPower as 'Metric-LastWeekMinPower',
-        LastWeekMaxPowerTime as 'Metric-LastWeekMaxPowerTime',
+        strftime('%s', LastWeekMaxPowerTime, 'unixepoch', 'utc') as 'Metric-LastWeekMaxPowerTime',
         LastWeekMaxPower as 'Metric-LastWeekMaxPower',
         LastWeekAvgPower as 'Metric-LastWeekAvgPower',
-        LastMinuteMinPowerTime as 'Metric-LastMinuteMinPowerTime',
-        LastMinuteMinPower as 'Metric-LastMinuteMinPower',
-        LastMinuteMaxPowerTime as 'Metric-LastMinuteMaxPowerTime',
-        LastMinuteMaxPower as 'Metric-LastMinuteMaxPower',
-        LastMinuteAvgPower as 'Metric-LastMinuteAvgPower',
-        LastHourMinPowerTime as 'Metric-LastHourMinPowerTime',
+
+        strftime('%s', LastDayMinPowerTime, 'unixepoch', 'utc') as 'Metric-LastDayMinPowerTime',
+        LastDayMinPower as 'Metric-LastDayMinPower',
+        strftime('%s', LastDayMaxPowerTime, 'unixepoch', 'utc') as 'Metric-LastDayMaxPowerTime',
+        LastDayMaxPower as 'Metric-LastDayMaxPower',
+        LastDayAvgPower as 'Metric-LastDayAvgPower',
+
+        strftime('%s', LastHourMinPowerTime, 'unixepoch', 'utc') as 'Metric-LastHourMinPowerTime',
         LastHourMinPower as 'Metric-LastHourMinPower',
-        LastHourMaxPowerTime as 'Metric-LastHourMaxPowerTime',
+        strftime('%s', LastHourMaxPowerTime, 'unixepoch', 'utc') as 'Metric-LastHourMaxPowerTime',
         LastHourMaxPower as 'Metric-LastHourMaxPower',
         LastHourAvgPower as 'Metric-LastHourAvgPower',
-        LastDayMinPowerTime as 'Metric-LastDayMinPowerTime',
-        LastDayMinPower as 'Metric-LastDayMinPower',
-        LastDayMaxPowerTime as 'Metric-LastDayMaxPowerTime',
-        LastDayMaxPower as 'Metric-LastDayMaxPower',
-        LastDayAvgPower as 'Metric-LastDayAvgPower'
+
+        strftime('%s', LastMinuteMinPowerTime, 'unixepoch', 'utc') as 'Metric-LastMinuteMinPowerTime',
+        LastMinuteMinPower as 'Metric-LastMinuteMinPower',
+        strftime('%s', LastMinuteMaxPowerTime, 'unixepoch', 'utc') as 'Metric-LastMinuteMaxPowerTime',
+        LastMinuteMaxPower as 'Metric-LastMinuteMaxPower',
+        LastMinuteAvgPower as 'Metric-LastMinuteAvgPower'
+
       FROM TblsPowerStatistics
 
   PowerMetrics:
@@ -535,6 +135,12 @@ UDB-Metric-Import:
         '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
+
+        -- MEB - 2/7/2020 - observed 5s, 10s, 15s, and 30s intervals. possibly suppressed upstream
+        -- setting 5s sensor interval for now
+        5000000000 as 'SensorInterval',  -- 5s interval w/ 2s slack
+        1000000000 as 'SensorSlack',
+        true as 'RequiresExpand',
 
         TotalStoragePower as 'Metric-TotalStoragePower',
         TotalPciePower as 'Metric-TotalPciePower',
@@ -564,7 +170,8 @@ UDB-Metric-Import:
       SHM.db:
         TblsThermalMetrics:
     ScanInterval: 0
-    WaitInterval: 1
+    # telemetrypop populates this table once per 5sec, changing from 1 sec to 5 sec.
+    WaitInterval: 5
     Query: |
       SELECT
         cast( (julianday('now') - 2440587.5)*86400 * 1000000000 as integer) as Timestamp,
@@ -572,6 +179,11 @@ UDB-Metric-Import:
         '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
+
+        -- MEB - 2020-02-07 - observed 5s, 10s, 15s, 20s, 25s interals. Typical is 5s. Possibly suppressed upstream
+        5000000000 as 'SensorInterval',
+        1000000000 as 'SensorSlack',
+        true as 'RequiresExpand',
 
         TotalPSUHeatDissipation as 'Metric-TotalPSUHeatDissipation',
         SysRackTempDelta as 'Metric-SysRackTempDelta',
@@ -602,6 +214,12 @@ UDB-Metric-Import:
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
 
+        -- MEB 2020-02-07 - observed mostly reliable 5s intervals. Sometimes 10s. Possibly suppressed upstream
+        -- Sailaja 2020-03-11 backend i.e telemetrypop reports every 5s
+        5000000000 as 'SensorInterval',
+        1000000000 as 'SensorSlack',
+        true as 'RequiresExpand',
+
         CpuMemoryMetrics_DOT_NonC0ResidencyLow_DOT_value as 'Metric-NonC0ResidencyLow',
         CpuMemoryMetrics_DOT_NonC0ResidencyHigh_DOT_value as 'Metric-NonC0ResidencyHigh',
         CpuMemoryMetrics_DOT_CUPSIIOBandwidthPort3_DOT_value as 'Metric-CUPSIIOBandwidthPort3',
@@ -620,7 +238,7 @@ UDB-Metric-Import:
       SHM.db:
         TblsPSUMetrics:
     ScanInterval: 0
-    WaitInterval: 5
+    WaitInterval: 60
     Query: |
       SELECT
         cast( (julianday('now') - 2440587.5)*86400 * 1000000000 as integer) as Timestamp,
@@ -628,6 +246,13 @@ UDB-Metric-Import:
         '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
+        'SHM.db::TblsPSUMetrics::' || ROWID as MVSourceTraceInfo,
+
+        -- MEB 2020-02-07 - observed mostly reliable 5s intervals. Sometimes 10s. Possibly suppressed upstream
+        -- Sailaja 2020-03-11 Backend i.e telemetrypop reports every minute.
+        60000000000 as 'SensorInterval',  -- 60s interval w/ 5s slack
+        5000000000 as 'SensorSlack',
+        true as 'RequiresExpand',
 
         Temperature as 'Metric-TemperatureReading',
         FanSpeed as 'Metric-RPMReading'
@@ -648,6 +273,15 @@ UDB-Metric-Import:
         '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
+        'SHM.db::TblsStorageSensor::' || ROWID as MVSourceTraceInfo,
+
+        -- MEB 2020-02-07 - TODO -> Need info from Sailaja about the intervals here
+        -- My data set has no recurrence on these values, bug in telemetrypop? Or are they really not changing? Too much suppression happening.
+        -- TODO FIXME - going to hardcode this as 20s for now
+        -- Sailaja - we need to check this, because backend reports only if there is a change, so should expand happen?
+        5000000000 as 'SensorInterval',
+        1000000000 as 'SensorSlack',
+        true as 'RequiresExpand',
 
         CurrentReading as 'Metric-TemperatureReading'
       FROM TblsStorageSensor
@@ -667,6 +301,15 @@ UDB-Metric-Import:
         '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
+        'SHM.db::TblsMemorySensor::' || ROWID as MVSourceTraceInfo,
+
+        -- MEB 2020-02-07 - TODO -> Need info from Sailaja about the intervals here
+        -- My data set has no recurrence on these values, bug in telemetrypop? Or are they really not changing? Too much suppression happening.
+        -- TODO FIXME - going to hardcode this as 20s for now
+        -- Sailaja - we need to check this, because backend reports only if there is a change, so should expand happen?
+        5000000000 as 'SensorInterval',
+        1000000000 as 'SensorSlack',
+        true as 'RequiresExpand',
 
         CurrentReading as 'Metric-TemperatureReading'
       FROM TblsMemorySensor
@@ -686,6 +329,15 @@ UDB-Metric-Import:
         '/redfish/v1/FIXME/' || FriendlyFQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
+        'SHM.db::TblsFPGASensor::' || ROWID as MVSourceTraceInfo,
+
+        -- MEB 2020-02-07 - TODO -> Need info from Sailaja about the intervals here
+        -- No hardware in MEB test machine. Need info.
+        -- TODO FIXME - going to hardcode this as 20s for now
+        -- Sailaja - we need to check this, because backend reports only if there is a change, so should expand happen?
+        5000000000 as 'SensorInterval',  -- 5s interval w/ 1s slack
+        1000000000 as 'SensorSlack',
+        true as 'RequiresExpand',
 
         CurrentReading as 'Metric-TemperatureReading'
       FROM TblsFPGASensor
@@ -696,8 +348,8 @@ UDB-Metric-Import:
     DBChange:
       SHM.db:
         TblsAggregationMetrics:
-    ScanInterval: 0
-    WaitInterval: 5
+    ScanInterval: 60
+    WaitInterval: 60
     Query: |
       SELECT
         -- only artificial available for now
@@ -706,6 +358,13 @@ UDB-Metric-Import:
         '/redfish/v1/FIXME/' || FQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
+
+        -- MEB 2020-02-07 - observed ~60s regular intervals here, but occasional 5s. WTF?
+        -- TODO - investigate sensor interval here
+        -- Sailaja - we need to check this, because reportinterval for this is zero & devicepoll is 60 sec?
+        60000000000 as 'SensorInterval',
+        5000000000 as 'SensorSlack',
+        true as 'RequiresExpand',
 
         SystemMaxPowerConsumption as 'Metric-SystemMaxPowerConsumption',
         SystemMaxInletTempHour as 'Metric-SystemMaxInletTempHour',
@@ -728,6 +387,10 @@ UDB-Metric-Import:
          '/redfish/v1/FIXME/' || FQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
+        3600000000000 as 'SensorInterval',
+        60000000000 as 'SensorSlack',
+        true as 'RequiresExpand',
+        'DMLiveObjectDatabase.db::TblRAID_PDSmartData_NVMe::' || ROWID as MVSourceTraceInfo,
 
         smartData_DOT_percentageUsed as 'Metric-PercentageUsed',
         smartData_DOT_criticalWarning as 'Metric-CriticalWarning',
@@ -774,6 +437,11 @@ UDB-Metric-Import:
          '/redfish/v1/FIXME/' || FQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
+        'DMLiveObjectDatabase.db::TblRAID_PDSmartData_SAS_SATA::' || ROWID as MVSourceTraceInfo,
+
+        3600000000000 as 'SensorInterval',
+        60000000000 as 'SensorSlack',
+        true as 'RequiresExpand',
 
         smartData_DOT_volatileMemoryBackupSourceFailures as 'Metric-VolatileMemoryBackupSourceFailures',
         smartData_DOT_usedReservedBlockCount as 'Metric-UsedReservedBlockCount',
@@ -798,6 +466,73 @@ UDB-Metric-Import:
       FROM TblRAID_PDSmartData_SAS_SATA
       WHERE Timestamp > :HWM
 
+
+  FCPortStatistics:
+    Type: MetricColumns
+    ScanInterval: 0
+    WaitInterval: 60
+    DBChange:
+      DMLiveObjectDatabase.db:
+        TblFC_Port_Stats_Obj:
+        TblFC_Standard_Obj:
+        TblFC_Cap_Obj:
+    Query: |
+      SELECT DISTINCT
+        TblFC_Port_Stats_Obj.StatisticsTime * 1000000000 as Timestamp,
+        TblFC_Cap_Obj.hdr_DOT_fqdd as Context,
+        'DMLiveObjectDatabase.db::TblFC_Port_Stats_Obj::' || TblFC_Port_Stats_Obj.ROWID as MVSourceTraceInfo,
+         '/redfish/v1/FIXME/' || TblFC_Cap_Obj.hdr_DOT_fqdd as Property,
+        TblFC_Cap_Obj.hdr_DOT_fqdd as FQDD,
+        30000000000 as 'SensorInterval',  -- 5s interval w/ 1s slack
+        5000000000 as 'SensorSlack',
+        true as 'RequiresExpand',
+
+        TblFC_Port_Stats_Obj.FCInvalidCRCs as 'Metric-FCInvalidCRCs',
+        TblFC_Port_Stats_Obj.FCLinkFailures as 'Metric-FCLinkFailures',
+        TblFC_Port_Stats_Obj.FCLossOfSignals as 'Metric-FCLossOfSignals',
+        TblFC_Port_Stats_Obj.FCRxKBCount as 'Metric-FCRxKBCount',
+        TblFC_Port_Stats_Obj.FCRxSequences as 'Metric-FCRxSequences',
+        TblFC_Port_Stats_Obj.FCRxTotalFrames as 'Metric-FCRxTotalFrames',
+        TblFC_Port_Stats_Obj.FCTxKBCount as 'Metric-FCTxKBCount',
+        TblFC_Port_Stats_Obj.FCTxSequences as 'Metric-FCTxSequences',
+        TblFC_Port_Stats_Obj.FCTxTotalFrames as 'Metric-FCTxTotalFrames',
+        CASE TblFC_Standard_Obj.OSDriverState
+        WHEN 0 then "Non-operational"
+        WHEN 1 then "Operational"
+        WHEN 2 then "Unknown"
+        ELSE null
+        END as 'Metric-FcStatOSDriverState',
+
+        CASE TblFC_Standard_Obj.PortSpeed 
+        WHEN 0 then "No Link"
+        WHEN 1 then "2 Gbps"
+        WHEN 2 then "4 Gbps"
+        WHEN 3 then "8 Gbps"
+        WHEN 4 then "16 Gbps"
+        WHEN 5 then "32 Gbps"
+        WHEN 6 then "64 Gbps"
+        WHEN 7 then "128 Gbps"
+        WHEN 8 then "256 Gpbs"
+        WHEN 9 then "Unknown"
+        END as 'Metric-PortSpeed',
+
+        CASE TblFC_Standard_Obj.PortStatus
+        WHEN 0 then "Down"
+        WHEN 1 then "Up"
+        WHEN 2 then "Unknown"
+        ELSE null
+        END as 'Metric-Portstatus'
+
+      FROM TblFC_Port_Stats_Obj
+      left join TblFC_Cap_Obj
+         on(instr(TblFC_Cap_Obj.hdr_DOT_fqdd, TblFC_Cap_Obj.hdr_DOT_fqdd) > 0)
+      left join TblFC_Standard_Obj
+         on(instr(TblFC_Port_Stats_Obj.hdr_DOT_fqdd, TblFC_Standard_Obj.hdr_DOT_fqdd)> 0)
+      WHERE ((select ActiveOIDMapping.ObjType from ActiveOIDMapping
+         where TblFC_Port_Stats_Obj.OID=ActiveOIDMapping.OID ) = 1841)
+      AND Timestamp > :HWM
+
+
   GPU-Statistics:
     Type: MetricColumns
     # SingleRecordEtag is the underlying HWM, so we can scan the table more often
@@ -812,6 +547,11 @@ UDB-Metric-Import:
         FQDD as Context,
          '/redfish/v1/FIXME/' || FQDD as Property,
         FQDD as FQDD,
+        'DMLiveObjectDatabase.db::TblGPUStatisticsObj::' || ROWID as MVSourceTraceInfo,
+
+        600000000000 as 'SensorInterval',
+        60000000000 as 'SensorSlack',
+        true as 'RequiresExpand',
 
         SBERetiredPages as 'Metric-SBERetiredPages',
         SBECounterGRTex as 'Metric-SBECounterGRTex',
@@ -832,6 +572,8 @@ UDB-Metric-Import:
       FROM TblGPUStatisticsObj
       WHERE Timestamp > :HWM
 
+
+
   GPU-Health:
     Type: MetricColumns
     # SingleRecordEtag is the underlying HWM, so we can scan the table more often
@@ -846,98 +588,293 @@ UDB-Metric-Import:
         FQDD as Context,
          '/redfish/v1/FIXME/' || FQDD as Property,
         FQDD as FQDD,
+        'DMLiveObjectDatabase.db::TblGPUHealthObj::' || ROWID as MVSourceTraceInfo,
 
-        ThermalAlertState as 'Metric-ThermalAlertState',
-        SecondaryGpuTemp as 'Metric-SecondaryGpuTemp',
-        PrimaryGpuTemp as 'Metric-PrimaryGpuTemp',
-        PowerSupplyStatus as 'Metric-PowerSupplyStatus',
-        PowerConsumption as 'Metric-PowerConsumption',
-        PowerBrakeState as 'Metric-PowerBrakeState',
-        MemoryTemp as 'Metric-MemoryTemp',
-        GPUStatus as 'Metric-GPUStatus',
-        GPUHealth as 'Metric-GPUHealth',
-        BoardTemp as 'Metric-BoardTemp',
-        BoardPowerSupplyStatus as 'Metric-BoardPowerSupplyStatus'
+        5000000000 as 'SensorInterval',
+        1000000000 as 'SensorSlack',
+        true as 'RequiresExpand',
+
+        CASE BoardPowerSupplyStatus
+        WHEN "Not Applicable"  then "Not Applicable"
+        WHEN "SufficientPower" then "SufficientPower"
+        WHEN "UnderPowered"    then "UnderPowered"
+        ELSE null
+        END as "Metric-BoardPowerSupplyStatus",
+
+        BoardTemp              as 'Metric-BoardTemperature',
+        CASE GPUHealth
+        WHEN "Degraded"  then "Degraded"
+        WHEN "OK" then "OK"
+        WHEN "Critical" then "Critical"
+        WHEN "Unknown" then "Unknown"
+        ELSE null
+        END as 'Metric-GPUHealth',
+
+        CASE GPUStatus
+        WHEN "Available"  then "Available"
+        WHEN "Not Applicable" then "Not Applicable"
+        WHEN "Unavailable" then "Unavailable"
+        ELSE null
+        END as 'Metric-GPUStatus',
+
+        MemoryTemp             as 'Metric-MemoryTemperature',
+        CASE PowerBrakeState
+        WHEN "Not Applicable"  then "Available"
+        WHEN "Released" then "Not Applicable"
+        WHEN "Set" then "Unavailable"
+        ELSE null
+        END as 'Metric-PowerBrakeState',
+
+        PowerConsumption       as 'Metric-PowerConsumption',
+        CASE PowerSupplyStatus
+        WHEN "Disabled"  then "Disabled"
+        WHEN "Enabled" then "Enabled"
+        WHEN "Not Applicable" then "Not Applicable"
+        ELSE null
+        END as 'Metric-PowerSupplyStatus',
+
+        PrimaryGpuTemp         as 'Metric-PrimaryTemperature',
+        SecondaryGpuTemp       as 'Metric-SecondaryTemperature',
+        CASE ThermalAlertState
+        WHEN "Not Applicable" then "Not Applicable"
+        WHEN "NotPending"     then "NotPending"
+        WHEN "Pending"        then "Pending"
+        ELSE null
+        END as 'Metric-ThermalAlertState'
+
       FROM TblGPUHealthObj
       WHERE Timestamp > :HWM
 
   NICPortStats:
     Type: MetricColumns
     # statistictime is the underlying HWM, so we can scan the table slightly more often
-    ScanInterval: 30
-    WaitInterval: 5
+    ScanInterval: 0
+    WaitInterval: 300
     # CIMVIEW_DCIM_NICStatistics is a VIEW, so do dbchange on the underlying table
     DBChange:
       DMLiveObjectDatabase.db:
         TblNic_Port_Stats_Obj:
         TblNic_Partition_Stats_Obj:
-        TblSfp_Sensor_Obj:
         TblNic_RDMA_Stats_Obj:
+        TblSfp_Sensor_Obj:
     Query: |
-      SELECT
-        StatisticTime * 1000000000 as Timestamp,
-        FQDD as Context,
-         '/redfish/v1/FIXME/' || FQDD as Property,
-        FQDD as FQDD,
+      SELECT DISTINCT
+        TblNic_Port_Stats_Obj.StatisticsTime * 1000000000 as Timestamp,
+        TblNic_Port_Stats_Obj.hdr_DOT_fqdd as Context,
+         '/redfish/v1/FIXME/' || TblNic_Port_Stats_Obj.hdr_DOT_fqdd as Property,
+        TblNic_Port_Stats_Obj.hdr_DOT_fqdd as FQDD,
+        'DMLiveObjectDatabase.db::TblNic_Port_Stats_Obj::' || TblNic_Port_Stats_Obj.ROWID as MVSourceTraceInfo,
 
-        TxUnicast as 'Metric-TxUnicast',
-        TxPauseXONFrames as 'Metric-TxPauseXONFrames',
-        TxPauseXOFFFrames as 'Metric-TxPauseXOFFFrames',
-        TxMutlicast as 'Metric-TxMutlicast',
-        TxErrorPktSingleCollision as 'Metric-TxErrorPktSingleCollision',
-        TxErrorPktMultipleCollision as 'Metric-TxErrorPktMultipleCollision',
-        TxErrorPktLateCollision as 'Metric-TxErrorPktLateCollision',
-        TxErrorPktExcessiveCollision as 'Metric-TxErrorPktExcessiveCollision',
-        TxBytes as 'Metric-TxBytes',
-        TxBroadcast as 'Metric-TxBroadcast',
-        RxUnicast as 'Metric-RxUnicast',
-        RxRuntPkt as 'Metric-RxRuntPkt',
-        RxPauseXONFrames as 'Metric-RxPauseXONFrames',
-        RxPauseXOFFFrames as 'Metric-RxPauseXOFFFrames',
-        RxMutlicast as 'Metric-RxMutlicast',
-        RxJabberPkt as 'Metric-RxJabberPkt',
-        RxFalseCarrierDetection as 'Metric-RxFalseCarrierDetection',
-        RxErrorPktFCSErrors as 'Metric-RxErrorPktFCSErrors',
-        RxErrorPktAlignmentErrors as 'Metric-RxErrorPktAlignmentErrors',
-        RxBytes as 'Metric-RxBytes',
-        RxBroadcast as 'Metric-RxBroadcast',
-        RDMATxTotalWritePkts as 'Metric-RDMATxTotalWritePkts',
-        RDMATxTotalSendPkts as 'Metric-RDMATxTotalSendPkts',
-        RDMATxTotalReadReqPkts as 'Metric-RDMATxTotalReadReqPkts',
-        RDMATxTotalPackets as 'Metric-RDMATxTotalPackets',
-        RDMATxTotalBytes as 'Metric-RDMATxTotalBytes',
-        RDMATotalProtocolErrors as 'Metric-RDMATotalProtocolErrors',
-        RDMATotalProtectionErrors as 'Metric-RDMATotalProtectionErrors',
-        RDMARxTotalPackets as 'Metric-RDMARxTotalPackets',
-        RDMARxTotalBytes as 'Metric-RDMARxTotalBytes',
-        PartitionOSDriverState as 'Metric-PartitionOSDriverState',
-        PartitionLinkStatus as 'Metric-PartitionLinkStatus',
-        OSDriverState as 'Metric-OSDriverState',
-        LinkStatus as 'Metric-LinkStatus',
-        LanUnicastPktTXCount as 'Metric-LanUnicastPktTXCount',
-        LanUnicastPktRXCount as 'Metric-LanUnicastPktRXCount',
-        LanFCSRxErrors as 'Metric-LanFCSRxErrors',
-        FCOERxPktDroppedCount as 'Metric-FCOERxPktDroppedCount',
-        FCOEPktTxCount as 'Metric-FCOEPktTxCount',
-        FCOEPktRxCount as 'Metric-FCOEPktRxCount',
-        FCOELinkFailures as 'Metric-FCOELinkFailures',
-        FCCRCErrorCount as 'Metric-FCCRCErrorCount',
-        DiscardedPkts as 'Metric-DiscardedPkts',
+        -- MEB 2020-02-07 - observed 5s intervals
+        30000000000 as 'SensorInterval',  -- 5s interval w/ 1s slack
+        5000000000 as 'SensorSlack',
+        true as 'RequiresExpand',
 
-        -- These dont seem to be populated in the embedded nics that I see. Possibly this is there for add-in cards
-        Temperature as 'Metric-TemperatureReading',
-        VoltageValue as 'Metric-VoltageReading'
+        case
+           when TblNic_Port_Stats_Obj.TransmitTotalUnicast != -1
+              then TblNic_Port_Stats_Obj.TransmitTotalUnicast
+        end AS 'Metric-TxUnicast',
+        case
+           when TblNic_Port_Stats_Obj.TransmitTotalPauseXONFrames != (1<<32)-1
+              then TblNic_Port_Stats_Obj.TransmitTotalPauseXONFrames
+        end AS 'Metric-TxPauseXONFrames',
+        case
+           when TblNic_Port_Stats_Obj.TransmitTotalPauseXOFFFrames != (1<<32)-1
+              then TblNic_Port_Stats_Obj.TransmitTotalPauseXOFFFrames
+        end AS 'Metric-TxPauseXOFFFrames',
+        case
+           when TblNic_Port_Stats_Obj.TransmitTotalMutlicast != -1
+              then TblNic_Port_Stats_Obj.TransmitTotalMutlicast
+        end AS 'Metric-TxMutlicast',
+        case
+           when TblNic_Port_Stats_Obj.TransmitErrorPktSingleCollision != (1<<32)-1
+              then TblNic_Port_Stats_Obj.TransmitErrorPktSingleCollision
+        end AS 'Metric-TxErrorPktSingleCollision',
+        case
+           when TblNic_Port_Stats_Obj.TransmitErrorPktMultipleCollision != (1<<32)-1
+              then TblNic_Port_Stats_Obj.TransmitErrorPktMultipleCollision
+        end AS 'Metric-TxErrorPktMultipleCollision',
+        case
+           when TblNic_Port_Stats_Obj.TransmitErrorPktLateCollision != (1<<32)-1
+              then TblNic_Port_Stats_Obj.TransmitErrorPktLateCollision
+        end AS 'Metric-TxErrorPktLateCollision',
+        case
+           when TblNic_Port_Stats_Obj.TransmitErrorPktExcessiveCollision != (1<<32)-1
+              then TblNic_Port_Stats_Obj.TransmitErrorPktExcessiveCollision
+        end AS 'Metric-TxErrorPktExcessiveCollision',
+        case
+           when TblNic_Port_Stats_Obj.TransmitTotalBytes != -1
+              then TblNic_Port_Stats_Obj.TransmitTotalBytes
+        end AS 'Metric-TxBytes',
+        case
+           when TblNic_Port_Stats_Obj.TransmitTotalBroadcast != -1
+              then TblNic_Port_Stats_Obj.TransmitTotalBroadcast
+        end AS 'Metric-TxBroadcast',
+        case
+           when TblNic_Port_Stats_Obj.ReceiveTotalUnicast != -1
+              then TblNic_Port_Stats_Obj.ReceiveTotalUnicast
+        end AS 'Metric-RxUnicast',
+        case
+           when TblNic_Port_Stats_Obj.ReceiveRuntPkt != (1<<32)-1
+              then TblNic_Port_Stats_Obj.ReceiveRuntPkt
+        end AS 'Metric-RxRuntPkt',
+        case
+           when TblNic_Port_Stats_Obj.ReceiveTotalPauseXONFrames != (1<<32)-1
+              then TblNic_Port_Stats_Obj.ReceiveTotalPauseXONFrames
+        end AS 'Metric-RxPauseXONFrames',
+        case
+           when TblNic_Port_Stats_Obj.ReceiveTotalPauseXOFFFrames != (1<<32)-1
+              then TblNic_Port_Stats_Obj.ReceiveTotalPauseXOFFFrames
+        end AS 'Metric-RxPauseXOFFFrames',
+        case
+           when TblNic_Port_Stats_Obj.ReceiveTotalMutlicast != -1
+              then TblNic_Port_Stats_Obj.ReceiveTotalMutlicast
+        end AS 'Metric-RxMutlicast',
+        case
+           when TblNic_Port_Stats_Obj.ReceiveJabberPkt != (1<<32)-1
+              then TblNic_Port_Stats_Obj.ReceiveJabberPkt
+        end AS 'Metric-RxJabberPkt',
+        case
+           when TblNic_Port_Stats_Obj.ReceiveFalseCarrierDetection != (1<<32)-1
+              then TblNic_Port_Stats_Obj.ReceiveFalseCarrierDetection
+        end AS 'Metric-RxFalseCarrierDetection',
+        case
+           when TblNic_Port_Stats_Obj.ReceiveErrorPktFCSErrors != (1<<32)-1
+              then TblNic_Port_Stats_Obj.ReceiveErrorPktFCSErrors
+        end AS 'Metric-RxErrorPktFCSErrors',
+        case
+           when TblNic_Port_Stats_Obj.ReceiveErrorPktAlignmentErrors != (1<<32)-1
+              then TblNic_Port_Stats_Obj.ReceiveErrorPktAlignmentErrors
+        end AS 'Metric-RxErrorPktAlignmentErrors',
+        case
+           when TblNic_Port_Stats_Obj.ReceiveTotalBytes != -1
+              then TblNic_Port_Stats_Obj.ReceiveTotalBytes
+        end AS 'Metric-RxBytes',
 
-        -- These are somewhat interesting in the underlying table. Need to see if we can output these as well
+        case
+           when TblNic_Port_Stats_Obj.ReceiveTotalBroadcast != -1
+              then TblNic_Port_Stats_Obj.ReceiveTotalBroadcast
+        end AS 'Metric-RxBroadcast',
+        case TblNic_Port_Stats_Obj.OSDriverState
+          when 0 then "Non-operational"
+          when 1 then "Operational"
+          when 2 then "Unknown"
+          else null
+        end as 'Metric-OSDriverState',
+        case TblNic_Port_Stats_Obj.LinkStatus
+          when 0 then "Down"
+          when 1 then "Up"
+          when 2 then "Unknown"
+          else null
+        end as 'Metric-LinkStatus',
+
+        case
+           when TblNic_Port_Stats_Obj.DiscardedPkts != (1<<32)-1
+              then TblNic_Port_Stats_Obj.DiscardedPkts
+        end AS 'Metric-DiscardedPkts',
+
+        case
+           when TblNic_RDMA_Stats_Obj.RDMATxTotalWritePkts != -1
+              then TblNic_RDMA_Stats_Obj.RDMATxTotalWritePkts
+        end AS 'Metric-RDMATxTotalWritePkts',
+        case
+           when TblNic_RDMA_Stats_Obj.RDMATxTotalSendPkts != -1
+              then TblNic_RDMA_Stats_Obj.RDMATxTotalSendPkts
+        end AS 'Metric-RDMATxTotalSendPkts',
+        case
+           when TblNic_RDMA_Stats_Obj.RDMATxTotalReadReqPkts != -1
+              then TblNic_RDMA_Stats_Obj.RDMATxTotalReadReqPkts
+        end AS 'Metric-RDMATxTotalReadReqPkts',
+        case
+           when TblNic_RDMA_Stats_Obj.RDMATxTotalPackets != -1
+              then TblNic_RDMA_Stats_Obj.RDMATxTotalPackets
+        end AS 'Metric-RDMATxTotalPackets',
+        case
+           when TblNic_RDMA_Stats_Obj.RDMATxTotalBytes != -1
+              then TblNic_RDMA_Stats_Obj.RDMATxTotalBytes
+        end AS 'Metric-RDMATxTotalBytes',
+        case
+           when TblNic_RDMA_Stats_Obj.TotalProtocolErrors != (1<<32)-1
+              then TblNic_RDMA_Stats_Obj.TotalProtocolErrors
+        end AS 'Metric-RDMATotalProtocolErrors',
+        case
+           when TblNic_RDMA_Stats_Obj.TotalProtectionErrors != (1<<32)-1
+              then TblNic_RDMA_Stats_Obj.TotalProtectionErrors
+        end AS 'Metric-RDMATotalProtectionErrors',
+        case
+           when TblNic_RDMA_Stats_Obj.RDMARxTotalPackets != -1
+              then TblNic_RDMA_Stats_Obj.RDMARxTotalPackets
+        end AS 'Metric-RDMARxTotalPackets',
+        case
+           when TblNic_RDMA_Stats_Obj.RDMARxTotalBytes != -1
+              then TblNic_RDMA_Stats_Obj.RDMARxTotalBytes
+        end AS 'Metric-RDMARxTotalBytes',
+
+        case TblNic_Partition_Stats_Obj.PartitionOSDriverState
+          when 0 then "Non-operational"
+          when 1 then "Operational"
+          when 2 then "Unknown"
+          else null
+        end as 'Metric-PartitionOSDriverState',
+        case TblNic_Partition_Stats_Obj.PartitionLinkStatus
+          when 0 then "Down"
+          when 1 then "Up"
+          when 2 then "Unknown"
+          else null
+        end as 'Metric-PartitionLinkStatus',
+
+        case
+           when TblNic_Partition_Stats_Obj.LanUnicastPktTXCount != -1
+              then TblNic_Partition_Stats_Obj.LanUnicastPktTXCount
+        end AS 'Metric-LanUnicastPktTXCount',
+        case
+           when TblNic_Partition_Stats_Obj.LanUnicastPktRXCount != -1
+              then TblNic_Partition_Stats_Obj.LanUnicastPktRXCount
+        end AS 'Metric-LanUnicastPktRXCount',
+        case
+           when TblNic_Partition_Stats_Obj.LanFCSRxErrors != (1<<32)-1
+              then TblNic_Partition_Stats_Obj.LanFCSRxErrors
+        end AS 'Metric-LanFCSRxErrors',
+        case
+           when TblNic_Partition_Stats_Obj.FCOERxPktDroppedCount != (1<<32)-1
+              then TblNic_Partition_Stats_Obj.FCOERxPktDroppedCount
+        end AS 'Metric-FCOERxPktDroppedCount',
+        case
+           when TblNic_Partition_Stats_Obj.FCOEPktTxCount != -1
+              then TblNic_Partition_Stats_Obj.FCOEPktTxCount
+        end AS 'Metric-FCOEPktTxCount',
+        case
+           when TblNic_Partition_Stats_Obj.FCOEPktRxCount != -1
+              then TblNic_Partition_Stats_Obj.FCOEPktRxCount
+        end AS 'Metric-FCOEPktRxCount',
+        case
+           when TblNic_Partition_Stats_Obj.FCOELinkFailures != (1<<32)-1
+              then TblNic_Partition_Stats_Obj.FCOELinkFailures
+        end AS 'Metric-FCOELinkFailures',
+        case
+           when TblNic_Partition_Stats_Obj.FCCRCErrorCount != (1<<32)-1
+              then TblNic_Partition_Stats_Obj.FCCRCErrorCount
+        end AS 'Metric-FCCRCErrorCount'
+
+        -- These are somewhat interesting in the underlying table (TblSfp_Sensor_Obj). Need to see
+        -- if we can output these as well
+        -- Temperature as 'Metric-TemperatureReading'
+        -- VoltageValue as 'Metric-VoltageReading'
         --'RXInputPower'
-        --'RXInputPowerStatus'     ,
+        --'RXInputPowerStatus'
         --'TXBiasCurrent'
-        --'TXBiasCurrentStatus'    ,
+        --'TXBiasCurrentStatus'
         --'TXOutputPower'
         --'TXOutputPowerStatus'
 
-      FROM CIMVIEW_DCIM_NICStatistics
-      WHERE Timestamp > :HWM
+      FROM TblNic_Port_Stats_Obj
+      left join TblNic_Partition_Stats_Obj
+        on (instr(TblNic_Partition_Stats_Obj.hdr_DOT_key,TblNic_Port_Stats_Obj.hdr_DOT_fqdd) > 0)
+      left join TblNic_RDMA_Stats_Obj
+        on (instr(TblNic_RDMA_Stats_Obj.hdr_DOT_key,TblNic_Port_Stats_Obj.hdr_DOT_fqdd) > 0)
+      WHERE ((select ActiveOIDMapping.ObjType from ActiveOIDMapping
+        where TblNic_Port_Stats_Obj.OID = ActiveOIDMapping.OID ) = 1809) --NIC_PORT_STATS_OBJ(0x711)
+      AND Timestamp > :HWM
 
   HIITempSensors:
     Type: MetricColumns
@@ -953,6 +890,10 @@ UDB-Metric-Import:
         '/redfish/v1/FIXME/' || FQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
+        5000000000 as 'SensorInterval',
+        1000000000 as 'SensorSlack',
+        true as 'RequiresExpand',
+        'DMLiveObjectDatabase.db::TblHIISensorInfo_obj::' || ROWID as MVSourceTraceInfo,
 
         currentTemp as 'Metric-TemperatureReading'
       FROM TblHIISensorInfo_obj
@@ -972,6 +913,11 @@ UDB-Metric-Import:
         '/redfish/v1/FIXME/' || FQDD as Property,
         friendlyFQDD as FriendlyFQDD,
         FQDD as FQDD,
+        'DMLiveObjectDatabase.db::TblFanExtObj::' || ROWID as MVSourceTraceInfo,
+
+        5000000000 as 'SensorInterval',
+        1000000000 as 'SensorSlack',
+        true as 'RequiresExpand',
 
         VariableSpeed as 'Metric-RPMReading'
       from TblFanExtObj
@@ -991,9 +937,13 @@ UDB-Metric-Import:
 
         Key as FQDD,
         ProbeLocation as FriendlyFQDD,
+        5000000000 as 'MVSensorInterval',
+        1000000000 as 'MVSensorSlack',
+        true as 'MVRequiresExpand',
 
         -- property not quite right, as PS sensors are an exception
         printf('/redfish/v1/Dell/Systems/System.Embedded.1/DellNumericSensor/%s', replace(replace(Key, '|', '_0x7c_') , '#', '_0x23_')) as Property,
+        'DMLiveObjectDatabase.db::TblProbeObj::' || TblProbeObj.ROWID as MVSourceTraceInfo,
 
         CASE ObjType
         WHEN 0x16 then 'TemperatureReading'
@@ -1013,6 +963,7 @@ UDB-Metric-Import:
           WHEN 'iDRAC.Embedded.1#SystemBoardMEMUsage' then 'MemoryUsage'
           WHEN 'iDRAC.Embedded.1#SystemBoardIOUsage'  then 'IOUsage'
           END
+        ELSE 'IGNORE'
         END as Name,
 
         -- manually expand x^y since sqlite is missing a pow() or exp() function
@@ -1036,122 +987,8 @@ UDB-Metric-Import:
       left join
         ActiveOIDMapping on TblProbeObj.OID = ActiveOIDMapping.OID
       WHERE
-        Timestamp > :HWM AND (
-          -- <dchipobj.h>
-          -- TEMPERATURE_OBJ_TYPE (0x16) // ProbeObj
-          ( ObjType = 0x16 and subtype=0x05 ) or
-
-          -- FAN_OBJ_TYPE         (0x17) // ProbeObj
-          ( ObjType = 0x17 and (subtype=0x01 or subtype=0x03)) or
-
-          -- VOLTAGE_OBJ_TYPE     (0x18) // ProbeObj
-          --   All voltage subtypes that give actual readings
-          ( ObjType = 0x18 and ((SubType >= 0x01 and SubType <= 0x0F) or subType = 0x1C) ) or
-
-          -- CURRENT_OBJ_TYPE     (0x19) // ProbeObj
-          ( ObjType = 0x19 ) or
-
-          ( ObjType = 0x38 )    -- USAGE_OBJ_TYPE       (0x38) // CPU Utilization
-        )
-
-  Sensor:
-    Type: DISABLE-DirectMetric
-    # TODO: UNDERLYING TABLE NEEDS HWM.
-    # TODO: Underlying view table missing FQDD, need to add
-    ScanInterval: 0
-    WaitInterval: 5
-    # CIMVIEW_DCIM_NumericSensor is a view, do db change notifications on underlying tables
-    DBChange:
-      DMLiveObjectDatabase.db:
-        TblProbeObj:
-    Query: |
-      SELECT
-        cast( (julianday('now') - 2440587.5)*86400 * 1000000000 as integer) as Timestamp,
-        case
-          when SensorType = 1 then
-          case
-            when DeviceID = 'iDRAC.Embedded.1#SystemBoardCPUUsage' then 'CPUUsage'
-            when DeviceID = 'iDRAC.Embedded.1#SystemBoardSYSUsage' then 'SystemUsage'
-            when DeviceID = 'iDRAC.Embedded.1#SystemBoardMEMUsage' then 'MemoryUsage'
-            when DeviceID = 'iDRAC.Embedded.1#SystemBoardIOUsage'  then 'IOUsage'
-          end
-          when SensorType = 2 then 'TemperatureReading'
-          when SensorType = 3 then 'VoltageReading'
-          when SensorType = 5 then 'RPMReading'
-          else "InvalidMetric-" || SensorType
-        end as Name,
-
-        -- manually expand x^y since sqlite is missing a pow() or exp() function
-        -- TODO: check that the positive/negative is correct here since this might be reversed
-        CASE UnitModifier
-        WHEN -6 THEN CurrentReading * 1000000.0
-        WHEN -5 THEN CurrentReading * 100000.0
-        WHEN -4 THEN CurrentReading * 10000.0
-        WHEN -3 THEN CurrentReading * 1000.0
-        WHEN -2 THEN CurrentReading * 100.0
-        WHEN -1 THEN CurrentReading * 10.0
-        WHEN  0 THEN CurrentReading * 1.0
-        WHEN  1 THEN CurrentReading / 10.0
-        WHEN  2 THEN CurrentReading / 100.0
-        WHEN  3 THEN CurrentReading / 1000.0
-        WHEN  4 THEN CurrentReading / 10000.0
-        WHEN  5 THEN CurrentReading / 100000.0
-        WHEN  6 THEN CurrentReading / 1000000.0
-        END as Value,
-
-        printf('/redfish/v1/Dell/Systems/System.Embedded.1/DellNumericSensor/%s', replace(replace(DeviceID, '|', '_0x7c_') , '#', '_0x23_')) as Property,
-        ElementName as Context,
-        DeviceID as FQDD,
-        ElementName as FriendlyFQDD
-      FROM CIMVIEW_DCIM_NumericSensor
-      WHERE Timestamp > :HWM
-
-  PSSensor:
-    # TODO: UNDERLYING TABLE NEEDS HWM.
-    Type: DISABLE-DirectMetric
-    # CIMVIEW_DCIM_PSNumericSensor is view, do db change on underlying tables
-    DBChange:
-      DMLiveObjectDatabase.db:
-        TblProbeObj:
-    ScanInterval: 0
-    WaitInterval: 5
-    Query: |
-      SELECT
-        cast( (julianday('now') - 2440587.5)*86400 * 1000000000 as integer) as Timestamp,
-        case SensorType
-          when 13 then
-          case
-            when DeviceID = 'iDRAC.Embedded.1#SystemBoardPwrConsumption' then 'SystemBoardPowerConsumption'
-            when Description = "Power Supply Power Consumption" then "WattsReading"
-            else 'InvalidMetric-' || DeviceID
-          end
-          else "InvalidMetric-" || SensorType
-        end as Name,
-
-        -- manually expand x^y since sqlite is missing a pow() or exp() function
-        -- TODO: check that the positive/negative is correct here since this might be reversed
-        CASE UnitModifier
-        WHEN -6 THEN CurrentReading * 1000000.0
-        WHEN -5 THEN CurrentReading * 100000.0
-        WHEN -4 THEN CurrentReading * 10000.0
-        WHEN -3 THEN CurrentReading * 1000.0
-        WHEN -2 THEN CurrentReading * 100.0
-        WHEN -1 THEN CurrentReading * 10.0
-        WHEN  0 THEN CurrentReading * 1.0
-        WHEN  1 THEN CurrentReading / 10.0
-        WHEN  2 THEN CurrentReading / 100.0
-        WHEN  3 THEN CurrentReading / 1000.0
-        WHEN  4 THEN CurrentReading / 10000.0
-        WHEN  5 THEN CurrentReading / 100000.0
-        WHEN  6 THEN CurrentReading / 1000000.0
-        END as Value,
-
-        printf('/redfish/v1/Dell/Systems/System.Embedded.1/DellPSNumericSensor/%s', replace(replace(DeviceID, '|', '_0x7c_') , '#', '_0x23_')) as Property,
-        ElementName as Context,
-        DeviceID as FQDD,
-        ElementName as FriendlyFQDD
-      FROM CIMVIEW_DCIM_PSNumericSensor
-      WHERE Timestamp > :HWM
+        Timestamp > :HWM AND
+        Name != 'IGNORE'
 
 internal:
   # we can put the sql statements that we use internally in metric engine here
@@ -1162,14 +999,45 @@ internal:
   # Be aware: Viper will lower case all names of config keys, so just them here as lower case or people might get confused.
   #
   namedsql:
+    md_insert: |
+      INSERT INTO MetricDefinition
+               ( MetricId, Name, Description, MetricType, MetricDataType, Units, Accuracy, SensingInterval, DiscreteValues)
+        VALUES (:MetricID, :Name, :Description, :MetricType, :MetricDataType, :Units, :Accuracy, :SensingInterval, :DiscreteValues)
+
     mrd_insert: |
       INSERT INTO MetricReportDefinition
-               ( Name,  Enabled,  AppendLimit,  Type,  SuppressDups,  Actions,  Updates,  Period,  TimeSpan)
-        VALUES (:Name, :Enabled, :AppendLimit, :Type, :SuppressDups, :Actions, :Updates, :Period, :TimeSpan)
+               ( Name,  ShortDesc,  LongDesc,  Enabled,  AppendLimit,  Type,  SuppressDups,  Actions,  Updates,  Period,  TimeSpan,  Hidden)
+        VALUES (:Name, :ShortDesc, :LongDesc, :Enabled, :AppendLimit, :Type, :SuppressDups, :Actions, :Updates, :Period, :TimeSpan, :Hidden)
+
+    trg_insert: |
+      INSERT INTO Trigger
+               ( RedfishID, Name, Description, MetricType, TriggerActions)
+        VALUES (:RedfishID, :Name, :Description, :MetricType, :TriggerActions)
+
+    evttrg_insert: |
+      INSERT INTO EventTriggers
+               ( EemiID, TriggerID)
+        VALUES (:EemiID, :TriggerID)
+
+    trgmrd_insert: |
+      INSERT INTO TriggerToMRD
+               ( MetricReportDefinitionID, TriggerID)
+        VALUES (:MetricReportDefinitionID, :TriggerID)
+
+    trg_update: |
+      UPDATE Trigger
+      SET
+        Name=:Name,
+        Description=:Description,
+        MetricType=:MetricType,
+        TriggerActions=:TriggerActions
+      WHERE RedfishID=:RedfishID
 
     mrd_update: |
       UPDATE MetricReportDefinition
       SET
+        ShortDesc=:ShortDesc,
+        LongDesc=:LongDesc,
         Enabled=:Enabled,
         AppendLimit=:AppendLimit,
         Type=:Type,
@@ -1177,7 +1045,8 @@ internal:
         Actions=:Actions,
         Period=:Period,
         Updates=:Updates,
-        TimeSpan=:TimeSpan
+        TimeSpan=:TimeSpan,
+        Hidden=:Hidden
       WHERE
         Name=:Name
 
@@ -1248,32 +1117,37 @@ internal:
         ID AS MetaID, FQDDPattern, SourcePattern, PropertyPattern, Wildcards, CollectionFunction, CollectionDuration, SuppressDups
       FROM MetricMeta
       WHERE
-        (:Name LIKE NamePattern OR NamePattern is NULL OR NamePattern = '') AND
-        (:FQDD LIKE FQDDPattern OR FQDDPattern is NULL OR FQDDPattern = '') AND
-        (:Source LIKE SourcePattern OR SourcePattern is NULL OR SourcePattern = '') AND
-        (:Property LIKE PropertyPattern OR PropertyPattern is NULL OR PropertyPattern = '')
+        (NamePattern     = '' OR :Name     LIKE NamePattern)     AND
+        (FQDDPattern     = '' OR :FQDD     LIKE FQDDPattern)     AND
+        (SourcePattern   = '' OR :Source   LIKE SourcePattern)   AND
+        (PropertyPattern = '' OR :Property LIKE PropertyPattern)
 
     insert_metric_instance: |
       INSERT INTO MetricInstance
-             ( Name,  FQDD,  Property,  Context,  Function,            Label,  CollectionScratch, LastValue, LastTS,  FlushTime,  SuppressDups, Dirty)
-      VALUES (:Name, :FQDD, :Property, :Context, :CollectionFunction, :Label, :CollectionScratch, '',        0,      :FlushTime, :SuppressDups, false)
+             ( Name,  FQDD,  Property,  Context,  Function,                      Duration,  Label,  CollectionScratch, LastValue, LastTS,  FlushTime,  SuppressDups, Dirty,    RequiresExpand,    SensorInterval,    SensorSlack,  Source,  SourceTraceInfo)
+      VALUES (:Name, :FQDD, :Property, :Context, :CollectionFunction, :CollectionDuration, :Label, :CollectionScratch, '',        0,      :FlushTime, :SuppressDups, false, :MVRequiresExpand, :MVSensorInterval, :MVSensorSlack, :Source, :MVSourceTraceInfo)
 
     find_metric_instance: |
       select
-        MI.ID as InstanceID
+        MI.ID as InstanceID,
+        MI.Dirty as Dirty,
+        MI.Source as Source,
+        MI.Name as Name,
+        (select count(*) from MetricMetaToInstance as MMTI where MMTI.InstanceID = MI.ID and MMTI.MetaID = :MetaID) as HasAssocMM
       from MetricInstance as MI
       where
         MI.Name=:Name and
         MI.FQDD=:FQDD and
         MI.Property=:Property and
         MI.Context=:Context and
-        MI.Function=:CollectionFunction
+        MI.Function=:CollectionFunction and
+        MI.Duration=:CollectionDuration
 
     set_metric_instance_dirty: |
       UPDATE MetricInstance set Dirty=true
 
     set_metric_instance_clean: |
-      UPDATE MetricInstance set Dirty=false where ID=:InstanceID
+      UPDATE MetricInstance set Dirty=false, RequiresExpand=:MVRequiresExpand where ID=:InstanceID
 
     iterate_metric_instance: |
       select distinct
@@ -1283,22 +1157,59 @@ internal:
         MI.LastValue,
         MI.FlushTime,
         MI.SuppressDups,
-        MM.CollectionFunction,
-        MM.CollectionDuration,
-        MI.Dirty
+        MI.Function as CollectionFunction,
+        MI.Duration as CollectionDuration,
+        MI.Dirty,
+        MI.RequiresExpand as MIRequiresExpand,
+        MI.SensorInterval as MISensorInterval,
+        MI.SensorSlack    as MISensorSlack,
+        MI.SourceTraceInfo as MISourceTraceInfo
       from MetricInstance as MI
-        inner join MetricMetaToInstance as MMTI on MI.ID = MMTI.InstanceID
-        inner join MetricMeta as MM on MMTI.MetaID = MM.ID
       where
         MI.Name=:Name and
         MI.FQDD=:FQDD and
         MI.Property=:Property and
         MI.Context=:Context
 
+    iterate_metric_instance_for_report: |
+      select distinct
+        MI.ID as InstanceID,
+        MI.Source as Source,
+        MI.Name as Name,
+        MI.CollectionScratch,
+        MI.LastTS,
+        MI.LastValue,
+        MI.FlushTime,
+        MI.SuppressDups,
+        MI.Function as CollectionFunction,
+        MI.Duration as CollectionDuration,
+        MI.Dirty,
+        MI.RequiresExpand as MIRequiresExpand,
+        MI.SensorInterval as MISensorInterval,
+        MI.SensorSlack    as MISensorSlack,
+        MI.SourceTraceInfo as MISourceTraceInfo
+      from MetricInstance as MI
+      inner join MetricMetaToInstance as MMTI on MI.ID = MMTI.InstanceID
+      inner join ReportDefinitionToMetricMeta as rd2mm on MMTI.MetaID = rd2mm.MetaID
+      where
+        rd2mm.ReportDefinitionID = :ID
+
+
     update_metric_instance: |
       UPDATE MetricInstance
       SET LastTS=:LastTS, LastValue=:LastValue, CollectionScratch=:CollectionScratch, FlushTime=:FlushTime
       WHERE ID=:InstanceID
+
+    count_report_records: |
+        select
+          count(*) as Count
+        from MetricValue as MV
+        inner join MetricMetaToInstance as MMTI on MV.InstanceID = MMTI.InstanceID
+        inner join ReportDefinitionToMetricMeta as rd2mm on MMTI.MetaID = rd2mm.MetaID
+        WHERE
+          ( rd2mm.ReportDefinitionID = :MRDID ) AND
+          ( MV.Timestamp > :Start )
+
 
   sqlx:
     find_onchange_mrd_by_mm_instance: |
@@ -1311,7 +1222,10 @@ internal:
 
     mrd_select_idbyname: SELECT ID FROM MetricReportDefinition where Name=?
 
+    generic_get: select root from JSON where [@odata.id] = ?
+
     delete_mrd: delete from MetricReportDefinition where name=?
+    delete_mr: delete from MetricReport where Name=?
 
     delete_mm_assoc: delete from ReportDefinitionToMetricMeta where ReportDefinitionID=?
 
@@ -1376,7 +1290,7 @@ internal:
     #    .. Delete any ReportDefinitionToMetricMeta that doesn't match an MRD
     #    .. Delete any ReportDefinitionToMetricMeta that doesn't match a MetricMeta
     #    XX Delete any MetricMeta that doesnt have a ReportDefinitionToMetricMeta entry
-    #    oo Delete any MetricInstance without MetricMeta
+    #    XX Delete any MetricInstance that doesnt have a MetricMetaToInstance entry
     #    .. Delete any MetricValue without MetricInstance
     #
     # XX = complete
@@ -1397,10 +1311,95 @@ internal:
       )
 
     find_mrd_by_id: |
-      SELECT ID, Name,  Enabled, AppendLimit, Type, SuppressDups, Actions, Updates, Period FROM MetricReportDefinition where ID=?
+      SELECT
+        ID,
+        Name,
+        ShortDesc,
+        LongDesc,
+        Enabled,
+        AppendLimit,
+        Type,
+        SuppressDups,
+        Actions,
+        Updates,
+        Period,
+        TimeSpan,
+        HeartbeatInterval,
+        Hidden
+      FROM MetricReportDefinition where ID=?
+
 
     find_mrd_by_name: |
-      SELECT ID, Name,  Enabled, AppendLimit, Type, SuppressDups, Actions, Updates, Period FROM MetricReportDefinition where Name=?
+      SELECT
+        ID,
+        Name,
+        ShortDesc,
+        LongDesc,
+        Enabled,
+        AppendLimit,
+        Type,
+        SuppressDups,
+        Actions,
+        Updates,
+        Period,
+        TimeSpan,
+        HeartbeatInterval,
+        Hidden
+      FROM MetricReportDefinition where Name=?
+
+    trglist_by_mrdid: |
+      SELECT
+        group_concat(RedfishID, " ")
+        FROM Trigger, TriggerToMRD
+        WHERE Trigger.ID = TriggerID AND MetricReportDefinitionID = ?
+
+    mrdlist_by_trgid: |
+      SELECT
+        group_concat(Name, " ")
+        FROM MetricReportDefinition, TriggerToMRD
+        WHERE MetricReportDefinition.ID = MetricReportDefinitionID AND TriggerID = ?
+
+    evtlist_by_trgid: |
+      SELECT
+        group_concat(EemiID, " ")
+        FROM EventTriggers
+        WHERE TriggerID = ?
+
+    find_trg_by_name: |
+      SELECT
+        ID,
+        RedfishID,
+        Name,
+        Description,
+        MetricType,
+        TriggerActions
+      FROM Trigger WHERE RedfishID=?
+
+    find_trg_by_id: |
+      SELECT
+        ID,
+        RedfishID,
+        Name,
+        Description,
+        MetricType,
+        TriggerActions
+      FROM Trigger WHERE ID=?
+
+    trgmrd_del_assoc: |
+      DELETE FROM TriggerToMRD
+      WHERE TriggerID=?
+
+    mrdtrg_del_assoc: |
+      DELETE FROM TriggerToMRD
+      WHERE MetricReportDefinitionID=?
+
+    evttrg_del_assoc: |
+      DELETE FROM EventTriggers
+      WHERE TriggerID=?
+
+    delete_trigger: |
+      DELETE FROM Trigger
+      WHERE RedfishID=?
 
     insert_mv_int:  INSERT INTO MetricValueInt  (InstanceID, Timestamp, Value) VALUES (?, ?, ?)
     insert_mv_real: INSERT INTO MetricValueReal (InstanceID, Timestamp, Value) VALUES (?, ?, ?)
@@ -1410,41 +1409,35 @@ internal:
     vacuum: vacuum
 
 createdb:
-  # This bumps memory usage by 10MB for some unknown reason
-  #  - "PRAGMA cache_size=4096;"
-  # Need to try this one out:
-  #  - "PRAGMA cache_size=0;"
-  - "PRAGMA busy_timeout = 1000;"
-  - "PRAGMA journal_size_limit=4096;"
+  #- "PRAGMA busy_timeout = 1000;"
   - "PRAGMA foreign_keys = ON;"
   - "PRAGMA journal_mode = WAL;"
-  - "PRAGMA synchronous = OFF;"
+  - "PRAGMA journal_size_limit=512;"   # N * page_size
+  - "PRAGMA wal_autocheckpoint = 32;"  # N * page_size
+  - "PRAGMA synchronous = NORMAL;"
+  # seems to have a great memory consumption benefit:
+  - "PRAGMA mmap_size=262144;"         # N bytes - Not "wasting any ram here as it's all in tmpfs already
+  - "PRAGMA main.max_page_count = 2560"  # enforce upper limit of 10MB on DB
+  - "PRAGMA cache=shared;"
+  - "PRAGMA cache_size=-64;"   # -N -> N kilobytes. Default without '-' means "Pages"
+
   - |
       CREATE TABLE IF NOT EXISTS MetricReportDefinition
       (
-        ID           INTEGER PRIMARY KEY NOT NULL,
-        Name         TEXT UNIQUE NOT NULL, -- Name of the metric report defintion. This is what shows up in the collection
-        ShortDesc    TEXT,
-        LongDesc     TEXT,
-        Enabled      BOOLEAN,
-        AppendLimit  INTEGER,
-        Type         TEXT,                 -- type of report: 'Periodic', 'OnChange', 'OnRequest'
-        SuppressDups BOOLEAN,
-        Actions      TEXT,                 -- json array of options: 'LogToMetricReportsCollection', 'RedfishEvent'
-        Updates      TEXT,                 -- 'AppendStopsWhenFull', 'AppendWrapsWhenFull', 'NewReport', 'Overwrite'
-        Period       INTEGER not null default 0,
-        TimeSpan     INTEGER not null default 0,
-        Hidden       BOOLEAN               -- Not displayed to the user, only for internal use
-      )
-
-  - |
-      CREATE TABLE IF NOT EXISTS MetricDefinition
-      (
-        ID      INTEGER PRIMARY KEY,
-        Name    TEXT UNIQUE NOT NULL,
-        Accuracy REAL,
-        Calculable TEXT, -- 'NonCalculatable', 'NonSummable', 'Summable'
-        CalculationAlgorithm TEXT
+        ID                INTEGER PRIMARY KEY NOT NULL,
+        Name              TEXT UNIQUE NOT NULL, -- Name of the metric report defintion. This is what shows up in the collection
+        ShortDesc         TEXT not null default '',
+        LongDesc          TEXT not null default '',
+        Enabled           BOOLEAN not null default false,
+        AppendLimit       INTEGER not null default 2400,
+        Type              TEXT not null default 'OnRequest',           -- type of report: 'Periodic', 'OnChange', 'OnRequest'
+        SuppressDups      BOOLEAN not null default true,
+        Actions           TEXT not null default '[]',                  -- json array of options: 'LogToMetricReportsCollection', 'RedfishEvent'
+        Updates           TEXT not null default 'AppendWrapsWhenFull', -- 'AppendStopsWhenFull', 'AppendWrapsWhenFull', 'NewReport', 'Overwrite'
+        Period            INTEGER not null default 0,
+        TimeSpan          INTEGER not null default 0,
+        HeartbeatInterval INTEGER NOT NULL DEFAULT 0,
+        Hidden            BOOLEAN NOT NULL DEFAULT FALSE -- Not displayed to the user, only for internal use
       )
 
   - |
@@ -1455,16 +1448,16 @@ createdb:
       (
         ID                 INTEGER UNIQUE PRIMARY KEY NOT NULL,
         SuppressDups       BOOLEAN NOT NULL DEFAULT true,
-        NamePattern        TEXT,
-        FQDDPattern        TEXT,   -- Dell OEM extension to sort based on FQDD patterns
-        SourcePattern      TEXT,   -- Dell OEM extension to sort based on where we got the data from
-        PropertyPattern    TEXT,   -- /redfish/v1/some/uri/{with}/{wildcards}#Property
-        Wildcards          TEXT,   --{'wildcard': ['array','of', 'possible', 'replacements'], 'with': ['another', 'list', 'of', 'replacements']}
-        CollectionFunction TEXT not null,   -- 'sum', 'avg', 'min', 'max'
-        CollectionDuration INTEGER,
+        NamePattern        TEXT NOT NULL DEFAULT "",
+        FQDDPattern        TEXT NOT NULL DEFAULT "",   -- Dell OEM extension to sort based on FQDD patterns
+        SourcePattern      TEXT NOT NULL DEFAULT "",   -- Dell OEM extension to sort based on where we got the data from
+        PropertyPattern    TEXT NOT NULL DEFAULT "",   -- /redfish/v1/some/uri/{with}/{wildcards}#Property
+        Wildcards          TEXT NOT NULL DEFAULT "",   --{'wildcard': ['array','of', 'possible', 'replacements'], 'with': ['another', 'list', 'of', 'replacements']}
+        CollectionFunction TEXT not null DEFAULT "",   -- 'sum', 'avg', 'min', 'max'
+        CollectionDuration INTEGER NOT NULL DEFAULT 0,
 
         -- indexes and constraints
-        unique (NamePattern, SuppressDups, FQDDPattern, SourcePattern, PropertyPattern, Wildcards, CollectionFunction, CollectionDuration)
+        unique (NamePattern, FQDDPattern, SourcePattern, PropertyPattern, SuppressDups, Wildcards, CollectionFunction, CollectionDuration)
       )
 
   - |
@@ -1482,7 +1475,7 @@ createdb:
             references MetricMeta (ID)
               on delete cascade
         );
-        CREATE INDEX IF NOT EXISTS report_definition_2_metric_meta_metric_meta_id_idx ON ReportDefinitionToMetricMeta(MetaID)
+        CREATE INDEX IF NOT EXISTS report_definition_2_metric_meta_id_idx ON ReportDefinitionToMetricMeta(MetaID)
 
   - |
       CREATE TABLE IF NOT EXISTS MetricInstance
@@ -1494,16 +1487,21 @@ createdb:
         Source            TEXT    NOT NULL DEFAULT '',
         Context           TEXT    NOT NULL, -- usually FQDD
         Function          TEXT    NOT NULL,
+        Duration          INTEGER NOT NULL DEFAULT 0,
         Label             TEXT    NOT NULL, -- 'friendly FQDD' + 'metric name' + 'collectionfn'
         SuppressDups      BOOLEAN NOT NULL default true,
         CollectionScratch TEXT    NOT NULL, -- Scratch space used by calculation functions
         FlushTime         INTEGER,          -- Time at which any aggregated data should be flushed
         LastTS            INTEGER NOT NULL, -- Used to quickly suppress dups for this instance
         LastValue         TEXT    NOT NULL, -- Used to quickly suppress dups for this instance
+        RequiresExpand    BOOLEAN NOT NULL DEFAULT TRUE, -- should we automatically expand gaps
+        SensorInterval    INTEGER NOT NULL DEFAULT 0,    -- set to the backend interval
+        SensorSlack       INTEGER NOT NULL DEFAULT 0,    -- how much subsequent timestamps can drift
+        SourceTraceInfo   TEXT    NOT NULL DEFAULT '',   -- DB:TABLE:ROWID -- can look for sqlite operation==(delete) and turn off sensor interval
         Dirty             BOOLEAN NOT NULL DEFAULT TRUE, -- set to dirty any time MRD changes, clean once a metric has been processed
 
         -- indexes and constraints
-        unique (Name, FQDD, Property, Context, Function, SuppressDups)
+        unique (Name, FQDD, Property, Context, Function, Duration, SuppressDups)
       )
 
   - |
@@ -1564,6 +1562,7 @@ createdb:
 
   - |
       CREATE View IF NOT EXISTS MetricValue as
+        -- order is important here. dont re-arrange these, or you will break things
         select InstanceID, Timestamp, Value from MetricValueText
         union all
         select InstanceID, Timestamp, Value from MetricValueInt
@@ -1600,19 +1599,20 @@ createdb:
           MR.Sequence,
 
           CASE MRD.Type
-          WHEN 'Periodic' THEN ReportTimestamp
-          WHEN 'OnChange' THEN ReportTimestamp
+          WHEN 'Periodic' THEN MR.ReportTimestamp
+          WHEN 'OnChange' THEN MR.ReportTimestamp
           WHEN 'OnRequest' THEN cast( (julianday('now') - 2440587.5)*86400 * 1000000000 as integer)
           ELSE 0
           END as ReportTimestamp,
 
           CASE MRD.Type
           WHEN 'Periodic' THEN
-            CASE MRD.TimeSpan
-            WHEN 0 THEN StartTimestamp
-            ELSE ReportTimestamp - MRD.TimeSpan * 1000000000
+            CASE
+            WHEN MRD.TimeSpan = 0 THEN MR.StartTimestamp
+            WHEN MR.ReportTimestamp - MRD.TimeSpan < MR.StartTimestamp THEN  MR.ReportTimestamp - MRD.TimeSpan
+            ELSE StartTimestamp
             END
-          WHEN 'OnChange' THEN ReportTimestamp - MRD.TimeSpan * 1000000000
+          WHEN 'OnChange' THEN ReportTimestamp - MRD.TimeSpan
           WHEN 'OnRequest' THEN cast( (julianday('now') - 2440587.5)*86400 * 1000000000 - MRD.TimeSpan as integer)
           ELSE 0
           END as StartTimestamp
@@ -1633,10 +1633,12 @@ createdb:
               'MetricId', MI.Name,
               'Timestamp', strftime('%Y-%m-%dT%H:%M:%fZ', MV.Timestamp/1000000000, 'unixepoch'),
               'MetricValue', MV.Value,
-              'OEM', json_object(
+              'Oem', json_object(
                 'Dell', json_object(
-                  'Context', MI.Context,
-                  'Label', MI.Label
+                  'ContextID', MI.Context,
+                  'Label', MI.Label,
+                  'Source', MI.Source,
+                  'FQDD', MI.FQDD
                 )
           )) as 'JSON'
         from MetricReport_calculated as MR
@@ -1702,8 +1704,11 @@ createdb:
             ' "@odata.id": "/redfish/v1/TelemetryService/MetricReports/' || MR.Name || '",' ||
             ' "Id": "' || MR.Name || '",' ||
             ' "Name": "' || MR.Name || ' Metric Report",' ||
-            -- TODO: update this so we only output ReportSequence for Periodic and OnChange reports
-            -- ' "ReportSequence": ' || json_quote(Sequence) || ',' ||
+            CASE MRD.Type
+            WHEN 'Periodic' THEN ' "ReportSequence": ' || json_quote(Sequence) || ','
+            WHEN 'OnChange' THEN ' "ReportSequence": ' || json_quote(Sequence) || ','
+            ELSE ''
+            END ||
             ' "Timestamp": ' || strftime('"%Y-%m-%dT%H:%M:%fZ"', MR.ReportTimestamp/1000000000, 'unixepoch') || ', ' ||
             ' "MetricReportDefinition": {"@odata.id": "/redfish/v1/TelemetryService/MetricReportDefinitions/' || MRD.Name || '"}, ' ||
               ifnull((
@@ -1715,30 +1720,36 @@ createdb:
                   select JSON
                   from MetricValueByReport as MVR
                   where MVR.Name=MR.Name
-                    order by MVR.Timestamp DESC
-                    limit 24000
+                    limit 2400
                   ) AS a ),  ' "MetricValues":  [], "MetricValues@odata.count":  0 ')
           || '}'
         ) as root,
-        '/redfish/v1/TelemetryService/MetricReports/' || MR.Name as '@odata.id'
+        '/redfish/v1/TelemetryService/MetricReports/' || MR.Name as '@odata.id',
+        Hidden as Hidden
       from MetricReport_calculated as MR
       inner join MetricReportDefinition as MRD on MRD.ID = MR.ReportDefinitionID
 
   - |
+      -- DOES NOT SCALE:  This uses a temp table to spool the metric values. memory usage scales with # of records output.
+      -- do not expect to have scaling issues with this table as we will
+      -- generally have a low number of metric reports. just something to be aware
+      -- of. Hopefully we can fix the design in the future to be more scalable
+      -- (ie. not use sqlite to output redfish)
       DROP VIEW IF EXISTS MetricReportCollection_JSON;
       CREATE VIEW MetricReportCollection_JSON as
         select
-          json_object(
-            '@odata.context', '/redfish/v1/$metadata#MetricReportCollection.MetricReportCollection',
-            '@odata.id', '/redfish/v1/TelemetryService/MetricReports',
-            '@odata.type', '#MetricReportCollection.MetricReportCollection',
-            'Name', 'MetricReports',
-            'Members',
-            (
-            select
-              json_group_array( json_object('@odata.id', [@odata.id]) )
-            from MetricReport_JSON
-            )
+          json_patch(
+            json_object(
+              '@odata.context', '/redfish/v1/$metadata#MetricReportCollection.MetricReportCollection',
+              '@odata.id', '/redfish/v1/TelemetryService/MetricReports',
+              '@odata.type', '#MetricReportCollection.MetricReportCollection',
+              'Name', 'MetricReports'),
+            json(ifnull((
+                SELECT
+                  '{ "Members": ' ||  json_group_array( json_object('@odata.id', [@odata.id]) ) || ', ' ||
+                  ' "Members@odata.count": ' ||  count(*) || '}'
+                FROM MetricReport_JSON
+                  ),  ' "Members":  [], "Members@odata.count":  0 '))
           ) as root,
           '/redfish/v1/TelemetryService/MetricReports' as [@odata.id]
 
@@ -1755,34 +1766,36 @@ createdb:
           ' "Name": "' ||  ifnull(shortdesc, name || ' metric report definition') || '",' ||
           ' "Description": "' ||  ifnull(LongDesc, name || ' metric report definition') || '",' ||
             -- Hardcoded/fixed due to limitations in SQLITE query engine. LIMIT must be a constant
-          ' "AppendLimit": 24000,' ||
+          ' "AppendLimit": 2400,' ||
           ' "MetricReportDefinitionEnabled": ' || case Enabled when 1 then json('true') else json('false') end || ',' ||
           ' "MetricReportDefinitionType": "' || Type || '",' ||
           ' "MetricReportDefinitionType@Redfish.AllowableValues": ' || json_array('Periodic', 'OnChange', 'OnRequest') || ', ' ||
-          ' "MetricReportHeartbeatInterval": null,' ||
+          ' "MetricReportHeartbeatInterval": ' ||  '"PT' || ((HeartbeatInterval/1000000000)/(3600)) || 'H' || (((HeartbeatInterval/1000000000)/60)%60) || 'M' || ((HeartbeatInterval/1000000000)%60) || 'S",'  ||
           ' "SuppressRepeatedMetricValue": ' || case SuppressDups when 1 then json('true') else json('false') end || ',' ||
-          ' "ReportTimespan": "PT' || (TimeSpan/(3600)) || 'H' || ((TimeSpan/60)%60) || 'M' || (TimeSpan%60) || 'S' || '", ' ||
+          ' "ReportTimespan": "PT' || (TimeSpan/(3600000000000)) || 'H' || ((TimeSpan/60000000000)%60) || 'M' || ((TimeSpan/1000000000)%60) || 'S' || '", ' ||
           ' "ReportUpdates": "' || Updates || '", ' ||
           ' "ReportUpdates@Redfish.AllowableValues": ' || json_array('AppendStopsWhenFull', 'AppendWrapsWhenFull', 'NewReport', 'Overwrite') || ", " ||
 
           ' "ReportActions": ' || json(Actions) || ',' ||
           ' "ReportActions@odata.count": ' || json_array_length(json(Actions)) || ',' ||
           ' "ReportActions@Redfish.AllowableValues": ' || json_array('LogToMetricReportsCollection', 'RedfishEvent') || ',' ||
+          -- unsupported right now, so hardcoded:
+          ' "Wildcards": [], "Wildcards@odata.count": 0, ' ||
           case Type
           when 'Periodic' then
           ' "Schedule": ' || json_object(
-              'RecurrenceInterval', 'PT' || (Period/(3600)) || 'H' || ((Period/60)%60) || 'M' || (Period%60) || 'S'
+              'RecurrenceInterval', 'PT' || ((Period/1000000000)/(3600)) || 'H' || (((Period/1000000000)/60)%60) || 'M' || ((Period/1000000000)%60) || 'S'
             ) || ','
           else ''
           end ||
-          ' "MetricReport": ' || json((
+          ' "MetricReport": ' || IFNULL((
                 select
                   json_object( '@odata.id', '/redfish/v1/TelemetryService/MetricReports/' || Name )
                 from MetricReport as MR
                 where MR.ReportDefinitionID = MetricReportDefinition.ID
                 order by MR.Sequence DESC
                 LIMIT 1
-                )) || ',' ||
+                ), 'null') || ',' ||
           ifnull((
             SELECT
             ' "Metrics": ' ||  json('[' ||  group_concat(a.JSON) || ']') || ',' ||
@@ -1790,60 +1803,98 @@ createdb:
             FROM
             (
               select
-                (
-                 '{' ||
-                 ' "MetricID": "' || MM.NamePattern || '"' ||
-
-                 case MM.PropertyPattern
-                 when '' then ''
-                 else
-                 -- TODO: this is wrong, as it should be an array
-                 ', "MetricProperties": "' || MM.PropertyPattern ||'"'
-                 end ||
-
-                 case MM.CollectionFunction
-                 when '' then ''
-                 else
-                  ', "CollectionFunction": "' || MM.CollectionFunction || '"' ||
-                  ', "CollectionDuration": "' || MM.CollectionDuration || '"'
-                 end ||
-
-                 case MM.FQDDPattern
-                 when '' then ''
-                 else
-                 ', "OEM": ' || json_object(
+                json_object(
+                  'MetricId',
+                    CASE MM.NamePattern
+                    WHEN '' THEN NULL
+                    ELSE MM.NamePattern
+                    END,
+                  'CollectionFunction',
+                    CASE MM.CollectionFunction
+                    WHEN '' THEN NULL
+                    ELSE MM.CollectionFunction
+                    END,
+                  'CollectionDuration',
+                    CASE MM.CollectionDuration
+                    WHEN 0 THEN NULL
+                    ELSE 'PT' || (MM.CollectionDuration/(3600 * 1000000000)) || 'H' || ((MM.CollectionDuration/(60 * 1000000000))%60) || 'M' || ((MM.CollectionDuration/1000000000)%60) || 'S'
+                    END,
+                  'Oem', json_object(
                     'Dell', json_object(
-                      'FQDD', MM.FQDDPattern
+                      'FQDD',
+                        CASE MM.FQDDPattern
+                        WHEN '' THEN NULL
+                        ELSE MM.FQDDPattern
+                        END,
+                      'Source',
+                        CASE MM.SourcePattern
+                        WHEN '' THEN NULL
+                        ELSE MM.SourcePattern
+                        END
                     )
                   )
-                 end ||
-                 '}'
                 ) as JSON
               from MetricMeta as MM
-              left join  ReportDefinitionToMetricMeta as rd2mm on rd2mm.MetaID = MM.ID
+              inner join  ReportDefinitionToMetricMeta as rd2mm on rd2mm.MetaID = MM.ID
               where rd2mm.ReportDefinitionID = MetricReportDefinition.ID
-              ) AS a ), '"Metrics": [], "Metrics@odata.count": 0' ) ||
+              ) AS a ), '"Metrics": [], "Metrics@odata.count": 0' ) || ',' ||
+       ' "Links": ' ||
+         json_object (  'Triggers', (
+           select
+             json_group_array( json_object('@odata.id', '/redfish/v1/TelemetryService/Triggers/' ||
+                (select RedfishID from Trigger where TriggerID = ID) ))
+           from TriggerToMRD
+           where TriggerToMRD.MetricReportDefinitionID = MetricReportDefinition.ID )) ||
           '}'
           ) as root,
-          '/redfish/v1/TelemetryService/MetricReportDefinitions/' || Name as [@odata.id]
+          '/redfish/v1/TelemetryService/MetricReportDefinitions/' || Name as [@odata.id],
+          Hidden as Hidden
         from MetricReportDefinition
 
   - |
       DROP VIEW IF EXISTS MetricReportDefinitionCollection_JSON;
       CREATE VIEW MetricReportDefinitionCollection_JSON as
         select
-          json_object(
-            "@odata.context", "/redfish/v1/$metadata#MetricReportDefinitionCollection.MetricReportDefinitionCollection",
-            "@odata.id", "/redfish/v1/TelemetryService/MetricReportDefinitions",
-            "@odata.type", "#MetricReportDefinitionCollection.MetricReportDefinitionCollection",
-            "Name", "MetricReportDefinitions",
-            'Members', (
-              select
-                json_group_array( json_object('@odata.id', [@odata.id]) )
-              from MetricReportDefinition_JSON
-            )
+          json_patch(
+            json_object(
+              "@odata.context", "/redfish/v1/$metadata#MetricReportDefinitionCollection.MetricReportDefinitionCollection",
+              "@odata.id", "/redfish/v1/TelemetryService/MetricReportDefinitions",
+              "@odata.type", "#MetricReportDefinitionCollection.MetricReportDefinitionCollection",
+              "Name", "MetricReportDefinitions"),
+            json(ifnull((
+                SELECT
+                  '{ "Members": ' ||  json_group_array( json_object('@odata.id', [@odata.id]) ) || ', ' ||
+                  ' "Members@odata.count": ' ||  count(*) || '}'
+                FROM MetricReportDefinition_JSON
+                  ),  ' "Members":  [], "Members@odata.count":  0 '))
           ) as root,
           '/redfish/v1/TelemetryService/MetricReportDefinitions' as [@odata.id]
+
+  - |
+      DROP VIEW IF EXISTS MetricReportExtendedInfo_JSON;
+      CREATE VIEW MetricReportExtendedInfo_JSON as
+        select
+          json_object(
+            'error', json_object(
+              '@Message.ExtendedInfo', '[' || json_object(
+                'Message', 'Unable to generate the telemetry report because the telemetry report is disabled.',
+                'MessageArgs', '[]',
+                'MessageArgs@odata.count', 0,
+                'MessageId', 'IDRAC.1.6.SYS462',
+                'RelatedProperties', '[]',
+                'RelatedProperties@odata.count', 0,
+                'Resolution', 'Enable the Telemetry report . For more information about enabling Telemetry report on 15G and later PowerEdge servers, see the iDRAC User Guide and RACADM CLI Guide available on the support site.',
+                'Severity', 'Warning'
+              )
+            ) || ']',
+            'code','Base.1.2.GeneralError',
+            'message','A general error has occurred. See ExtendedInfo for more information'
+          ) as root,
+          400 as status,
+          '/redfish/v1/TelemetryService/MetricReports/' || Name as [@odata.id]
+        from MetricReportDefinition
+           WHERE (Enabled != true) AND
+                 (Hidden  != true)
 
   - |
       DROP VIEW IF EXISTS TelemetryService_JSON;
@@ -1879,15 +1930,25 @@ createdb:
       -- This is the table that creates a uniform table name to gather *any* metric report, regardless of type
       DROP VIEW IF EXISTS JSON;
       CREATE VIEW JSON as
-        select root, [@odata.id] from MetricReportDefinitionCollection_JSON
+        select 200 as status, root, [@odata.id] from MetricReportCollection_JSON
           UNION ALL
-        select root, [@odata.id] from MetricReportDefinition_JSON
+        select 200 as status, root, [@odata.id] from MetricReport_JSON
           UNION ALL
-        select root, [@odata.id] from MetricReportCollection_JSON
+        select 200 as status, root, [@odata.id] from MetricReportDefinitionCollection_JSON
           UNION ALL
-        select root, [@odata.id] from MetricReport_JSON
+        select 200 as status, root, [@odata.id] from MetricReportDefinition_JSON
           UNION ALL
-        select root, [@odata.id] from TelemetryService_JSON
+        select 200 as status, root, [@odata.id] from MetricDefinitionCollection_JSON
+          UNION ALL
+        select 200 as status, root, [@odata.id] from MetricDefinition_JSON
+          UNION ALL
+        select 200 as status, root, [@odata.id] from TelemetryService_JSON
+          UNION ALL
+        select 200 as status, root, [@odata.id] from TriggerCollection_JSON
+          UNION ALL
+        select 200 as status, root, [@odata.id] from Trigger_JSON
+          UNION ALL
+        select        status, root, [@odata.id] from MetricReportExtendedInfo_JSON
 
 # Backwards compat stuff to get the fcgi_rfsql to work. Drop the tables in a separate statement because it can error out (and be ignored)
   - |
@@ -1933,19 +1994,192 @@ createdb:
       DROP VIEW IF EXISTS TblTelemetryAttributesREPORT;
       CREATE VIEW         TblTelemetryAttributesREPORT AS
         SELECT
-          'Enabled' as CurrentValue,
+          CASE MRD.Enabled
+          WHEN true then 'Enabled'
+          WHEN false then 'Disabled'
+          END as CurrentValue,
           'iDRAC.Embedded.1#Telemetry' || Name || '.1#EnableTelemetry'  as Key
         FROM
-          MetricReport
+          MetricReportDefinition as MRD
+
+# TODO: currently gets default values a current triggers, need to reflect config
+  - |
+      CREATE VIEW IF NOT EXISTS TblTelemetryAttributesReportTrigger AS
+        SELECT
+          TriggerId as CurrentValue,
+          'iDRAC.Embedded.1#Telemetry' || Name || '.1#ReportTriggers'  as Key
+        FROM
+          MetricReport, TblTriggerMetricReport
+        WHERE
+          instr(MetricReport, Name) > 0
 
   - |
-      DROP VIEW IF EXISTS TblTelemetryAttributes;
-      CREATE VIEW         TblTelemetryAttributes AS
+      CREATE VIEW IF NOT EXISTS TblTelemetryAttributes AS
         SELECT * FROM TblTelemetryAttributesREPORT
         UNION ALL
         SELECT * FROM TblTelemetryAttributesRFEnable
         UNION ALL
         SELECT * FROM TblTelemetryAttributesTelemEnable
+        UNION ALL
+        SELECT REPLACE(group_concat(DISTINCT CurrentValue),',',','), Key from TblTelemetryAttributesReportTrigger GROUP BY Key
+
+  - |
+      CREATE TABLE IF NOT EXISTS TriggerToMRD
+      (
+        MetricReportDefinitionID      INTEGER not null,
+        TriggerID        INTEGER not null,
+
+        -- indexes and constraints
+        primary key (TriggerID, MetricReportDefinitionID)
+        foreign key (TriggerID)
+          references Trigger (ID)
+            on delete cascade
+        foreign key (MetricReportDefinitionID)
+          references MetricReportDefinition (ID)
+            on delete cascade
+      );
+
+  - |
+      CREATE TABLE IF NOT EXISTS EventTriggers
+      (
+        ID                INTEGER NOT NULL PRIMARY KEY,
+        EemiID            TEXT not null,
+        TriggerID             INTEGER not null,
+
+        -- indexes and constraints
+        foreign key (TriggerID)
+          references Trigger (ID)
+            on delete cascade
+      );
+
+  - |
+     CREATE TABLE IF NOT EXISTS Trigger
+     (
+       ID              INTEGER NOT NULL PRIMARY KEY,
+       RedfishID       TEXT UNIQUE NOT NULL,
+       Name            TEXT NOT NULL,
+       Description     TEXT NOT NULL,
+       MetricType      TEXT NOT NULL,
+       TriggerActions  TEXT NOT NULL
+     );
+
+  - |
+     -- 'MetricReport' in the column below is mistnmaed and is actually a MetricReportDefinition
+     -- but have to keep this name for compat reasons
+      CREATE VIEW IF NOT EXISTS TblTriggerMetricReport AS
+      SELECT
+        ET.EemiID as EemiId,
+        Trigger.RedfishID as TriggerId,
+        MRD.Name as MetricReport
+      FROM EventTriggers as ET, TriggerToMRD as TR2MRD
+      INNER JOIN Trigger ON Trigger.ID = ET.TriggerID
+      INNER JOIN MetricReportDefinition as MRD ON
+         TR2MRD.MetricReportDefinitionID = MRD.ID
+      WHERE
+         TR2MRD.TriggerID = Trigger.ID;
+
+  - |
+     CREATE VIEW IF NOT EXISTS Trigger_JSON AS
+      SELECT
+      (
+       '{' ||
+       ' "@odata.type": "#Triggers.v1_1_1.Triggers",' ||
+       ' "@odata.context": "/redfish/v1/$metadata#Triggers.Triggers",' ||
+       ' "@odata.id": "/redfish/v1/TelemetryService/Triggers/' || RedfishID || '",' ||
+       ' "Id": "' || RedfishID || '",' ||
+       ' "Name": "' || Name || '",' ||
+       ' "Description": "' || Description || '",' ||
+       ' "MetricType": "' || MetricType || '",' ||
+       ' "TriggerActions": ' || TriggerActions || ',' ||
+       ' "EventTriggers": ' ||
+          (select json_group_array( EemiID) from EventTriggers where EventTriggers.TriggerID = Trigger.ID)  || ',' ||
+       ' "EventTriggers@odata.count": ' ||
+          (select count(EemiID) from EventTriggers where EventTriggers.TriggerID = Trigger.ID)  || ',' ||
+       ' "Links": ' ||
+         json_object (  'MetricReportDefinitions', (
+           select
+             json_group_array( json_object('@odata.id', '/redfish/v1/TelemetryService/MetricReportDefinitions/' ||
+                (select Name from MetricReportDefinition where MetricReportDefinitionID = ID) ))
+           from TriggerToMRD
+           where TriggerToMRD.TriggerID = Trigger.ID )) ||
+       '}'
+       ) AS root,
+            '/redfish/v1/TelemetryService/Triggers/' || RedfishID AS [@odata.id]
+       FROM Trigger;
+
+  - |
+     CREATE VIEW IF NOT EXISTS TriggerCollection_JSON as
+      select
+      json_patch(
+        json_object(
+          "@odata.context", "/redfish/v1/$metadata#TriggerCollection.TriggerCollection",
+          "@odata.id", "/redfish/v1/TelemetryService/Triggers",
+          "@odata.type", "#TriggerCollection.TriggerCollection",
+          "Name", "Triggers"),
+        json(ifnull((
+          SELECT
+            '{ "Members": ' ||  json_group_array( json_object('@odata.id', [@odata.id]) ) || ', ' ||
+            ' "Members@odata.count": ' ||  count(*) || '}'
+          FROM Trigger_JSON
+          ),  ' "Members":  [], "Members@odata.count":  0 '))
+      )as root,
+        '/redfish/v1/TelemetryService/Triggers' as [@odata.id]
+
+  # Table populated at metric-engine start by reading MD jsons
+  - |
+     CREATE TABLE IF NOT EXISTS MetricDefinition
+     (
+       ID              INTEGER PRIMARY KEY,
+       MetricId        TEXT UNIQUE NOT NULL,
+       Name            TEXT NOT NULL,
+       Description     TEXT NOT NULL,
+       MetricType      TEXT NOT NULL,
+       MetricDataType  TEXT NOT NULL,
+       Units           TEXT,
+       Accuracy        REAL,
+       SensingInterval TEXT,
+       DiscreteValues  TEXT
+     );
+
+  - |
+     CREATE VIEW IF NOT EXISTS MetricDefinition_JSON as
+      SELECT
+      (
+       '{' ||
+       ' "@odata.type": "#MetricDefinition.v1_2_0.MetricDefinition",' ||
+       ' "@odata.context": "/redfish/v1/$metadata#MetricDefinition.MetricDefinition",' ||
+       ' "@odata.id": "/redfish/v1/TelemetryService/MetricDefinitions/' || MetricId || '",' ||
+       ' "Id": "' || MetricId || '",' ||
+       ' "Name": "' || Name || '",' ||
+       ' "Description": "' || Description || '",' ||
+       ' "MetricType": "' || MetricType || '",' ||
+       ' "MetricDataType": "' || MetricDataType || '",' ||
+       CASE WHEN Units = '' THEN '' ELSE ' "Units": "' || Units || '",'  END ||
+       ' "Accuracy": ' || Accuracy || ',' ||
+       ' "SensingInterval": "' || SensingInterval || '"' ||
+       CASE WHEN DiscreteValues LIKE 'null' THEN '' ELSE ', "DiscreteValues": ' || DiscreteValues END ||
+       '}'
+       ) AS root,
+            '/redfish/v1/TelemetryService/MetricDefinitions/' || MetricId AS [@odata.id]
+       FROM MetricDefinition;
+
+  - |
+     CREATE VIEW IF NOT EXISTS MetricDefinitionCollection_JSON as
+      select
+      json_patch(
+       json_object(
+        "@odata.context", "/redfish/v1/$metadata#MetricDefinitionCollection.MetricDefinitionCollection",
+        "@odata.id", "/redfish/v1/TelemetryService/MetricDefinitions",
+        "@odata.type", "#MetricDefinitionCollection.MetricDefinitionCollection",
+        "Name", "MetricDefinitions"),
+       json(ifnull((
+                SELECT
+                  '{ "Members": ' ||  json_group_array( json_object('@odata.id', [@odata.id]) ) || ', ' ||
+                  ' "Members@odata.count": ' ||  count(*) || '}'
+                FROM MetricDefinition_JSON
+                  ),  ' "Members":  [], "Members@odata.count":  0 '))
+       ) as root,
+       '/redfish/v1/TelemetryService/MetricDefinitions' as [@odata.id];
 
   - |
         DROP VIEW IF EXISTS AggregationMetricsMRView_json ; create view AggregationMetricsMRView_json as select * from JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricReports/AggregationMetrics';
@@ -1968,6 +2202,7 @@ createdb:
         DROP VIEW IF EXISTS SensorMRView_json ; create view SensorMRView_json as select * from JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricReports/Sensor';
         DROP VIEW IF EXISTS StorageDiskSMARTDataMRView_json ; create view StorageDiskSMARTDataMRView_json as select * from JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricReports/StorageDiskSMARTData';
         DROP VIEW IF EXISTS StorageSensorMRView_json ; create view StorageSensorMRView_json as select * from JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricReports/StorageSensor';
+        DROP VIEW IF EXISTS FCPortStatisticsMRView_json; create view FCPortStatisticsMRView_json as select * from JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricReports/FCPortStatistics';
         DROP VIEW IF EXISTS ThermalSensorMRView_json ; create view ThermalSensorMRView_json as select * from  JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricReports/ThermalSensor';
         DROP VIEW IF EXISTS ThermalMetricsMRView_json ; create view ThermalMetricsMRView_json as select * from  JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricReports/ThermalMetrics';
 
@@ -1975,8 +2210,8 @@ createdb:
         DROP VIEW IF EXISTS MetricReportDefinitionCollectionView_json ; create view MetricReportDefinitionCollectionView_json as select * from JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricReportDefinitions';
         DROP VIEW IF EXISTS TelemetryServiceView_json ; create view TelemetryServiceView_json as select * from JSON where [@odata.id] = '/redfish/v1/TelemetryService';
 
-        DROP VIEW IF EXISTS MetricDefinitionCollectionView_json ; -- create view MetricDefinitionCollectionView_json as select * from JSON  where [@odata.id] = '/redfish/v1/TelemetryService/MetricDefinitions';
-        DROP VIEW IF EXISTS MetricDefinitionView_json ;           -- create view MetricDefinitionView_json as select * from JSON where [@odata.id] = '/redfish/v1/TelemetryService/MetricDefinitions/';
+        DROP VIEW IF EXISTS MetricDefinitionCollectionView_json ; create view MetricDefinitionCollectionView_json as select * from JSON  where [@odata.id] = '/redfish/v1/TelemetryService/MetricDefinitions';
+        DROP VIEW IF EXISTS MetricDefinitionView_json ;           create view MetricDefinitionView_json as select * from JSON;
         DROP VIEW IF EXISTS TelemetryLogServiceLCLogview_json ;   -- create view TelemetryLogServiceLCLogview_json as select * from JSON;
 
 # Logging levels:
@@ -2004,34 +2239,17 @@ createdb:
 #   give 'level' to filter the module output to the specified log level and higher.
 #
 logs:
-    # Log warnings and Crit to stderr (everything else to log file, below)
+    # Log warnings and Crit to stderr
     - Enabled: true
       Level: "warn"
-      PrintFile: true
-      PrintFunction: true
-
-    # log all web server accesses
-    - Enabled: false
-      Level: "debug"
-      FileName: "debug.log"
-      PrintFile: true
-      PrintFunction: true
-
-    # (DISABLED) log stuff on a module by module basis to FILE
-    - Enabled: false
-      FileName: "/var/log/metric-engine.log"
-      Level: "debug"
-      PrintFile: true
-      PrintFunction: true
+      PrintFile: false
+      PrintFunction: false
+      #FileName: "debug.log"
       ModulesToEnable:
-        # all of the loggers below support a heirarchical arrangement where
-        # you can turn on debugging for all modules with (eg.)
-        # "Managers/CMC.Integrated", and you can selectively enable
-        # debugging for a single module by adding the full fqdd, eg.
-        # "Managers/CMC.Integrated.1". For the template config, we only
-        # specify the top levels
-        - name: "Managers/CMC.Integrated"
-          level: "crit"
-
-
-
+        # ar sync can be disabled once we are more confident in it
+        - name: "LegacyARSync"
+          level: "info"
+        - name: "ReportGeneration"
+          level: "info"
+        - name: "trigger"
+          level: "info"

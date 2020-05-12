@@ -1,0 +1,13 @@
+{ 
+    "@odata.type": "#MetricDefinition.v1_0_2.MetricDefinition",
+    "Id": "PSUEfficiency",
+    "Name": "PSU Efficiency Metric Definition",
+    "Description": "PSU efficiency in percentage",
+    "MetricType": "Numeric",
+    "MetricDataType": "Decimal",
+    "Units": "%",
+    "Accuracy": 5.0,
+    "SensingInterval": "PT5S",
+    "@odata.context": "/redfish/v1/$metadata#MetricDefinition.MetricDefinition",
+    "@odata.id": "/redfish/v1/TelemetryService/MetricDefinitions/PSUEfficiency"
+} 

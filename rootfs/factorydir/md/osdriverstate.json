@@ -1,0 +1,16 @@
+{ 
+    "@odata.type": "#MetricDefinition.v1_0_2.MetricDefinition",
+    "Id": "OSDriverState",
+    "Name": "OS Driver State Metric Definition",
+    "Description": "Indicates operating system driver states (Unknown, Operational, Non-operational)",
+    "MetricType": "Discrete",
+    "MetricDataType": "Enumeration",
+    "SensingInterval": "PT60S",
+    "DiscreteValues": [ 
+        "Unknown", 
+        "Operational", 
+        "Non-operational" 
+    ], 
+    "@odata.context": "/redfish/v1/$metadata#MetricDefinition.MetricDefinition",
+    "@odata.id": "/redfish/v1/TelemetryService/MetricDefinitions/OSDriverState"
+} 

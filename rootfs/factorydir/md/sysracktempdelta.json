@@ -1,0 +1,13 @@
+{ 
+    "@odata.type": "#MetricDefinition.v1_0_2.MetricDefinition",
+    "Id": "SysRackTempDelta",
+    "Name": "System Rack Temp Delta Metric Definition",
+    "Description": "Temperature difference between exhaust air and inlet air temperature of the server",
+    "MetricType": "Numeric",
+    "MetricDataType": "Integer",
+    "Units": "Cel",
+    "Accuracy": 5.0,
+    "SensingInterval": "PT5S",
+    "@odata.context": "/redfish/v1/$metadata#MetricDefinition.MetricDefinition",
+    "@odata.id": "/redfish/v1/TelemetryService/MetricDefinitions/SysRackTempDelta"
+} 

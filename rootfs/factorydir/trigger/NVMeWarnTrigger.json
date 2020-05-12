@@ -1,0 +1,25 @@
+{
+    "@odata.type": "#Triggers.v1_1_1.Triggers",
+    "Id": "NVMeWarnTrigger",
+    "Name":"Trigger on NVMe  warnings",
+    "Description": "Trigger when an OEM event is raised",
+    "MetricType": "Discrete",
+    "TriggerActions": [
+        "RedfishMetricReport"
+    ],
+    "EventTriggers": [
+        "iDRAC.1.6.PDR112",
+        "iDRAC.1.6.PDR113",
+        "iDRAC.1.6.PDR116"
+    ],
+    "EventTriggers@odata.count": 3,
+    "Links": {
+    	"MetricReportDefinitions": [
+    	{
+           "@odata.id": "/redfish/v1/TelemetryService/MetricReportDefinitions/NVMeSMARTData"
+    	}
+    	]
+    },
+    "@odata.context": "/redfish/v1/$metadata#Triggers.Triggers",
+    "@odata.id": "/redfish/v1/TelemetryService/Triggers/NVMeWarnTrigger"
+}

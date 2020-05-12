@@ -1,0 +1,13 @@
+{ 
+    "@odata.type": "#MetricDefinition.v1_0_2.MetricDefinition",
+    "Id": "DataUnitsWrittenUpper",
+    "Name": "Data Units Written Upper Metric Definition",
+    "Description": "Specifies the upper part of the count of 512 byte data units the host has written to the controller. This value is reported in thousands and is rounded up",
+    "MetricType": "Counter",
+    "MetricDataType": "Integer",
+    "Units": "Blocks",
+    "Accuracy": 0.0,
+    "SensingInterval": "PT3600S",
+    "@odata.context": "/redfish/v1/$metadata#MetricDefinition.MetricDefinition",
+    "@odata.id": "/redfish/v1/TelemetryService/MetricDefinitions/DataUnitsWrittenUpper"
+} 

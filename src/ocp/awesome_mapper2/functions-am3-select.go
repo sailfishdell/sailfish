@@ -37,7 +37,7 @@ func baseuri(resourceURI string) interface{} {
 }
 
 func nohash(resourceURI string) bool {
-	if i := strings.Index(resourceURI, "#"); i > -1 {
+	if strings.Contains(resourceURI, "#") {
 		return false
 	}
 	return true

@@ -48,7 +48,7 @@ type cacheItem struct {
 func MakeHandlerFunc(logger log.Logger, eb eh.EventBus, getter IDGetter, withUser func(string, []string) http.Handler, chain http.Handler) http.HandlerFunc {
 	tokenCache := []cacheItem{}
 	tokenCacheMu := sync.RWMutex{}
-	handlerlog := logger.New("module", "session")
+	handlerlog := log.With(logger, "module", "session")
 	handlerlog.Crit("Creating x-auth-token based session handler.")
 	return func(rw http.ResponseWriter, req *http.Request) {
 		var userName string
@@ -109,9 +109,10 @@ func MakeHandlerFunc(logger log.Logger, eb eh.EventBus, getter IDGetter, withUse
 	}
 }
 
-func SetupSessionService(svc *testaggregate.Service, v *view.View, d *domain.DomainObjects) {
+func SetupSessionService(logger log.Logger, svc *testaggregate.Service, v *view.View, d *domain.DomainObjects) {
 	eh.RegisterCommand(func() eh.Command {
 		return &POST{
+			logger:         logger,
 			model:          v.GetModel("default"),
 			commandHandler: d.CommandHandler,
 			eventWaiter:    d.EventWaiter,

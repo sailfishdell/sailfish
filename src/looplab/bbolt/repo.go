@@ -138,7 +138,6 @@ func (r *Repo) Save(ctx context.Context, entity eh.Entity) error {
 	}
 
 	r.db.Update(func(tx *bbolt.Tx) error {
-
 		b, err := tx.CreateBucketIfNotExists([]byte(eh.NamespaceFromContext(ctx)))
 		if err != nil {
 			fmt.Println("Bucket Not Created: ", err)

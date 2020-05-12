@@ -1,0 +1,13 @@
+{ 
+    "@odata.type": "#MetricDefinition.v1_0_2.MetricDefinition",
+    "Id": "PrimaryTemperature",
+    "Name": "Primary GPU Temperature Metric Definition",
+    "Description": "Temperature (degrees C)  on primary GPU",
+    "MetricType": "Numeric",
+    "MetricDataType": "Decimal",
+    "Units": "Cel",
+    "Accuracy": 0.0,
+    "SensingInterval": "PT5S",
+    "@odata.context": "/redfish/v1/$metadata#MetricDefinition.MetricDefinition",
+    "@odata.id": "/redfish/v1/TelemetryService/MetricDefinitions/PrimaryTemperature"
+} 
